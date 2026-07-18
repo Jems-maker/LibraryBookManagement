@@ -130,7 +130,8 @@ class ScannerApiController extends Controller
 
             $record->book->increment('available_copies');
 
-            $isOverdue = $now->gt($record->due_date);
+            // 10-minute grace period: only mark as overdue if more than 10 mins late
+            $isOverdue = $now->diffInMinutes($record->due_date, false) > 10;
             $penalty   = null;
             if ($isOverdue) {
                 $penaltyAmount = (float) (\App\Models\Setting::getValue('late_penalty_per_day') ?? 10);

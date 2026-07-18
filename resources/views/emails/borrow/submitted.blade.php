@@ -11,12 +11,16 @@
             <td align="center">
                 <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px;">
                     
-                    {{-- Header --}}
+                    {{-- Logo & Header --}}
                     <tr>
                         <td style="padding: 40px 40px 20px; text-align: center; border-bottom: 1px solid #f3f4f6;">
-                            <div style="margin: 0 auto 20px; width: 48px; height: 48px; background-color: #f3f4f6; border-radius: 24px; display: flex; align-items: center; justify-content: center;">
-                                <span style="font-size: 24px;">⏳</span>
-                            </div>
+                            <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 16px;"><tr>
+                            <td style="width: 52px; height: 52px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 14px; text-align: center; vertical-align: middle;">
+                                <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto;">
+                                    <tr><td style="width: 22px; height: 22px; border: 3px solid #ffffff; border-radius: 50%; font-size: 1px; line-height: 1px;">&nbsp;</td></tr>
+                                </table>
+                            </td>
+                            </tr></table>
                             <h1 style="margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.5px;">Request Submitted</h1>
                             <p style="margin: 8px 0 0; font-size: 14px; color: #6b7280;">Your borrow request is currently pending admin approval.</p>
                         </td>

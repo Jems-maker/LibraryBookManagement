@@ -164,11 +164,11 @@ export default function Dashboard() {
     queryFn: () => adminApi.borrowRecords.list({ status: 'borrowed' }).then(r => r.data)
   });
 
-  // Smart poll: check notifications every 10 seconds, refetch stats only if counts changed
+  // Smart poll: check notifications every 30 seconds, refetch stats only if counts changed
   const { data: notifData } = useQuery({
     queryKey: ['admin-notifications-poll'],
     queryFn: () => adminApi.notifications(),
-    refetchInterval: 10000,
+    refetchInterval: 30000,
   });
 
   // When notification counts change, invalidate the main stats query

@@ -92,6 +92,9 @@ export default function Books() {
             <thead className="bg-gray-50 text-xs uppercase text-gray-400">
               <tr>
                 <th className="px-6 py-4 font-semibold">Book</th>
+                <th className="px-6 py-4 font-semibold">Author</th>
+                <th className="px-6 py-4 font-semibold">Publisher</th>
+                <th className="px-6 py-4 font-semibold">Year</th>
                 <th className="px-6 py-4 font-semibold">Category</th>
                 <th className="px-6 py-4 font-semibold">Stock</th>
                 <th className="px-6 py-4 font-semibold">Status</th>
@@ -100,7 +103,7 @@ export default function Books() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
-                <tr><td colSpan={5} className="text-center py-10 text-gray-400">Loading...</td></tr>
+                <tr><td colSpan={8} className="text-center py-10 text-gray-400">Loading...</td></tr>
               ) : booksData?.data.map((book) => (
                 <tr key={book.id} className="hover:bg-gray-50/50">
                   <td className="px-6 py-4">
@@ -110,10 +113,18 @@ export default function Books() {
                       </div>
                       <div>
                         <div className="font-bold text-gray-900">{book.title}</div>
-                        <div className="text-xs text-gray-400">{book.author.name}</div>
                         <div className="text-[10px] text-gray-300 font-mono mt-0.5">{book.book_id}</div>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm text-gray-700 font-medium">{book.author?.name || '—'}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm text-gray-700">{book.publisher?.name || '—'}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm text-gray-700">{book.year_of_book || '—'}</span>
                   </td>
                   <td className="px-6 py-4">
                     <span className="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs rounded-lg font-medium">{book.category.name}</span>
@@ -191,11 +202,16 @@ function BookModal({ book, categories, authors, publishers, onClose }: any) {
   });
   const [cover, setCover] = useState<File | null>(null);
 
+  const [error, setError] = useState('');
+
   const mutation = useMutation({
     mutationFn: (data: FormData) => book ? adminApi.books.update(book.id, data) : adminApi.books.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-books'] });
       onClose();
+    },
+    onError: (err: any) => {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to save book. Please check your input.');
     }
   });
 
@@ -219,6 +235,14 @@ function BookModal({ book, categories, authors, publishers, onClose }: any) {
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-2xl">
+              <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-red-700 font-medium">{error}</p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
@@ -243,6 +267,10 @@ function BookModal({ book, categories, authors, publishers, onClose }: any) {
               />
             </div>
             <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Year of Book</label>
+              <input type="number" value={formData.year_of_book || ''} onChange={e => setFormData({ ...formData, year_of_book: e.target.value ? Number(e.target.value) : null })} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. 2020" />
+            </div>
+            <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Category</label>
               <SearchableSelect
                 options={categories.map((c: any) => ({ label: c.name, value: c.id }))}
@@ -255,10 +283,6 @@ function BookModal({ book, categories, authors, publishers, onClose }: any) {
               <label className="block text-sm font-semibold text-gray-700 mb-1">Total Copies</label>
               <input type="number" required min="1" value={formData.total_copies} onChange={e => setFormData({ ...formData, total_copies: Number(e.target.value) })} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
               <p className="text-[10px] text-gray-400 mt-1">Available copies auto-set to total</p>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Year of Book</label>
-              <input type="number" value={formData.year_of_book || ''} onChange={e => setFormData({ ...formData, year_of_book: e.target.value ? Number(e.target.value) : null })} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. 2020" />
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-1">Cover Image</label>

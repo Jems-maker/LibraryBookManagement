@@ -10,11 +10,19 @@
 <tr><td align="center">
 <table role="presentation" width="580" cellspacing="0" cellpadding="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
 
-    {{-- Green header band --}}
+    {{-- Green header band with icon --}}
     <tr><td style="background:linear-gradient(135deg,#10b981,#059669);padding:32px 40px;text-align:center;">
-        <div style="width:56px;height:56px;background:rgba(255,255,255,0.2);border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
-            <span style="font-size:28px;">✓</span>
-        </div>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto 16px;"><tr>
+        <td style="width:56px;height:56px;background:rgba(255,255,255,0.15);border-radius:16px;text-align:center;vertical-align:middle;">
+            <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto;">
+                <tr><td style="width:22px;height:22px;border:3px solid #ffffff;border-radius:50%;text-align:center;vertical-align:middle;font-size:1px;line-height:1px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto;"><tr>
+                    <td style="width:8px;height:8px;background:#ffffff;border-radius:50%;font-size:1px;line-height:1px;">&nbsp;</td>
+                    </tr></table>
+                </td></tr>
+            </table>
+        </td>
+        </tr></table>
         <h1 style="margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">Book Returned Successfully</h1>
         <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.85);">{{ now()->format('F d, Y — h:i A') }}</p>
     </td></tr>

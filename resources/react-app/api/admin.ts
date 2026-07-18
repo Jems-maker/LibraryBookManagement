@@ -9,12 +9,12 @@ export const adminApi = {
   // Books
   books: {
     list: (params: any) => api.get<PaginatedResponse<Book>>('/api/admin/books', { params }),
-    create: (data: any) => api.post('/api/admin/books', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+    create: (data: any) => api.post('/api/admin/books', data),
     update: (id: number, data: any) => {
       // Laravel needs _method=PUT for multipart/form-data updates
       if (data instanceof FormData) {
         data.append('_method', 'PUT');
-        return api.post(`/api/admin/books/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
+        return api.post(`/api/admin/books/${id}`, data);
       }
       return api.put(`/api/admin/books/${id}`, data);
     },
@@ -89,11 +89,12 @@ export const adminApi = {
   // Reports
   reports: {
     list: (params?: any) => api.get('/api/admin/reports', { params }),
+    pdf: (params?: any) => api.get('/api/admin/reports/pdf', { params, responseType: 'blob' }),
   },
 
   // Settings
   settings: {
     get: () => api.get('/api/admin/settings'),
-    update: (data: FormData) => api.post('/api/admin/settings', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+    update: (data: FormData) => api.post('/api/admin/settings', data),
   },
 };

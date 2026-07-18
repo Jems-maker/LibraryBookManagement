@@ -44,12 +44,12 @@ class SendOverdueReminders extends Command
             }
         }
 
-        // Find books exactly due this minute, including Pending Claim so students get notified at deadline.
+        // Find books exactly due this minute (only for claimed books).
         $nowStartString = $now->copy()->startOfMinute()->toDateTimeString();
         $nowEndString = $now->copy()->endOfMinute()->toDateTimeString();
         
         $dueNow = \App\Models\BorrowRecord::with(['user', 'book.author', 'book.category'])
-            ->whereIn('status', ['Borrowed', 'Pending Claim'])
+            ->where('status', 'Borrowed')
             ->whereBetween('due_date', [$nowStartString, $nowEndString])
             ->get();
             
@@ -59,11 +59,11 @@ class SendOverdueReminders extends Command
         }
 
         // 3. Find books that are exactly 20 minutes overdue (grace period)
-        $twentyMinsAgoStart = $now->copy()->subMinutes(20)->startOfMinute()->toDateTimeString();
-        $twentyMinsAgoEnd = $now->copy()->subMinutes(20)->endOfMinute()->toDateTimeString();
+        $twentyMinsAgoStart = $now->copy()->subMinutes(10)->startOfMinute()->toDateTimeString();
+        $twentyMinsAgoEnd = $now->copy()->subMinutes(10)->endOfMinute()->toDateTimeString();
 
         $overdue = \App\Models\BorrowRecord::with(['user', 'book.author', 'book.category'])
-            ->whereIn('status', ['Borrowed', 'Pending Claim'])
+            ->where('status', 'Borrowed')
             ->whereBetween('due_date', [$twentyMinsAgoStart, $twentyMinsAgoEnd])
             ->get();
             
@@ -77,9 +77,39 @@ class SendOverdueReminders extends Command
 
         // Also catch any old borrowed records that slipped past and mark them overdue without spamming email
         // Just in case the cron skipped a minute
-        \App\Models\BorrowRecord::whereIn('status', ['Borrowed', 'Pending Claim'])
+        \App\Models\BorrowRecord::where('status', 'Borrowed')
             ->where('due_date', '<', $twentyMinsAgoStart)
             ->update(['status' => 'Overdue']);
+
+        // Auto-expire any Pending Claim records whose due_date has already passed
+        // so students don't get due-date notices for books they haven't claimed
+        $expiredClaims = \App\Models\BorrowRecord::with(['user', 'book', 'borrowRequest'])
+            ->where('status', 'Pending Claim')
+            ->where('due_date', '<', $twentyMinsAgoStart)
+            ->get();
+
+        foreach ($expiredClaims as $record) {
+            // Reject the original borrow request
+            if ($record->borrowRequest) {
+                $record->borrowRequest->update(['status' => 'Rejected']);
+            }
+
+            // Restore book copy
+            $record->book->increment('available_copies');
+
+            // Mark record as expired
+            $record->update(['status' => 'Expired']);
+
+            // Notify the student
+            try {
+                if ($record->borrowRequest) {
+                    \Illuminate\Support\Facades\Mail::to($record->user->email)
+                        ->send(new \App\Mail\BorrowRequestRejected($record->borrowRequest));
+                }
+            } catch (\Exception $e) {
+                \Log::error('Auto-expire unclaimed record email failed: ' . $e->getMessage());
+            }
+        }
 
         $this->info('Reminders sent successfully. ' . $dueTomorrowCount . ' due tomorrow, ' . count($dueNow) . ' due now, ' . count($overdue) . ' overdue.');
     }

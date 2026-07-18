@@ -13,9 +13,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Register middleware here
-        $middleware->append([
-            \App\Http\Middleware\ThrottleApi::class,
+        // Register middleware aliases
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\IsAdmin::class,
+        ]);
+
+        // Add session middleware to API routes for Sanctum SPA authentication
+        $middleware->api(prepend: [
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

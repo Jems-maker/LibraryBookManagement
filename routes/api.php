@@ -3,13 +3,14 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// ── Auth ─────────────────────────────────────────────────────────────────────
+// ── Auth (unauthenticated) ────────────────────────────────────────────────────
 Route::post('/auth/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
 Route::post('/auth/admin-login', [\App\Http\Controllers\Api\AuthController::class, 'adminLogin']);
 Route::post('/auth/register', [\App\Http\Controllers\Api\AuthController::class, 'register']);
 Route::post('/auth/forgot-password', [\App\Http\Controllers\Api\AuthController::class, 'forgotPassword']);
 
-Route::middleware('auth:sanctum')->group(function () {
+// Apply rate limiting to all authenticated API routes
+Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
     Route::get('/auth/me', [\App\Http\Controllers\Api\AuthController::class, 'me']);
     Route::post('/auth/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout']);
 
@@ -68,7 +69,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/settings', [\App\Http\Controllers\Api\Admin\SettingApiController::class, 'index']);
         Route::post('/settings', [\App\Http\Controllers\Api\Admin\SettingApiController::class, 'update']);
 
-        // Reports
+                        // Reports
         Route::get('/reports', [\App\Http\Controllers\Api\Admin\ReportApiController::class, 'index']);
+        Route::get('/reports/pdf', [\App\Http\Controllers\Api\Admin\ReportApiController::class, 'downloadPdf']);
     });
 });

@@ -13,6 +13,13 @@
 <body>
     <div class="container">
         <div class="header">
+            <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 12px;"><tr>
+            <td style="width: 48px; height: 48px; background: rgba(255,255,255,0.15); border-radius: 14px; text-align: center; vertical-align: middle;">
+                <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto;">
+                    <tr><td style="width: 20px; height: 3px; background: #ffffff; border-radius: 2px; font-size: 1px; line-height: 1px;">&nbsp;</td></tr>
+                </table>
+            </td>
+            </tr></table>
             <h2 style="margin: 0;">Borrow Request Rejected</h2>
         </div>
         <div class="content">

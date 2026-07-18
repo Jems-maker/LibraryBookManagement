@@ -345,10 +345,10 @@ export default function BookDetailModal({ book, onClose }: Props) {
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-lg z-10 overflow-hidden animate-slide-up">
+      <div className="relative bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-lg z-10 max-h-[90vh] overflow-y-auto animate-slide-up">
 
         {/* Cover banner */}
-        <div className="relative h-48 bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden">
+        <div className="relative h-48 bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden shrink-0">
           {coverUrl ? (
             <img src={coverUrl} alt={book.title} className="w-full h-full object-cover opacity-80" />
           ) : (

@@ -373,7 +373,7 @@ php artisan app:sync-book-copies
 
 ### Authentication Flow
 
-1. **Student Login**: `POST /api/auth/login` (email/username + password).
+1. **Student Login**: `POST /api/auth/login` (email/Student ID + password).
 2. **Admin Login**: `POST /api/auth/admin-login` (email + password).
 3. Laravel Sanctum generates a personal access token.
 4. Token is stored in React (Context/AuthContext) and sent as `Bearer` token in subsequent requests.
