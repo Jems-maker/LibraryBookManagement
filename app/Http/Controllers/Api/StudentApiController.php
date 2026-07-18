@@ -72,18 +72,21 @@ class StudentApiController extends Controller
         }
 
         $request->validate([
-            'return_date' => ['required', 'date', 'after:now'],
+            'return_date' => ['required', 'date', 'after_or_equal:today'],
+            'return_time' => ['required', 'date_format:H:i'],
             'quantity'    => ['required', 'integer', 'min:1', "max:{$book->available_copies}"],
         ]);
 
-        $returnDate = Carbon::parse($request->return_date);
-        $borrowDays = now()->startOfDay()->diffInDays($returnDate);
+        $returnDateTime = Carbon::parse($request->return_date . ' ' . $request->return_time);
+
+        if ($returnDateTime->lte(now())) {
+            return response()->json(['message' => 'Return date & time must be in the future.'], 422);
+        }
 
         BorrowRequest::create([
             'user_id'              => $user->id,
             'book_id'              => $book->id,
-            'borrow_duration_days' => $borrowDays,
-            'return_date'          => $returnDate,
+            'return_date'          => $returnDateTime,
             'status'               => 'Pending',
             'quantity'             => $request->integer('quantity', 1),
         ]);
@@ -135,5 +138,21 @@ class StudentApiController extends Controller
             $r->book->cover_image = asset('storage/' . $r->book->cover_image);
         }
         return $r;
+    }
+
+    public function requests(Request $request): JsonResponse
+    {
+        $requests = BorrowRequest::with(['book.author'])
+            ->where('user_id', $request->user()->id)
+            ->latest()
+            ->get();
+
+        foreach ($requests as $req) {
+            if ($req->book?->cover_image && !str_starts_with($req->book->cover_image, 'http')) {
+                $req->book->cover_image = asset('storage/' . $req->book->cover_image);
+            }
+        }
+
+        return response()->json($requests);
     }
 }

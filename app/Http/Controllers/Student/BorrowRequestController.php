@@ -34,22 +34,18 @@ class BorrowRequestController extends Controller
         }
 
         $request->validate([
-            'return_date'          => ['required', 'date', 'after:now'],
+            'return_date'          => ['required', 'date'],
+            'return_time'          => ['required', 'date_format:H:i'],
             'quantity'             => ['nullable', 'integer', 'min:1', 'max:' . $book->available_copies],
-            'borrow_duration_hours'=> ['nullable', 'integer', 'min:1', 'max:24'],
         ]);
 
         $quantity   = (int) $request->get('quantity', 1);
-        $returnDate = Carbon::parse($request->return_date);
-        $borrowDays = $request->filled('borrow_duration_hours') ? null : now()->startOfDay()->diffInDays($returnDate);
-        $borrowHours = $request->filled('borrow_duration_hours') ? (int) $request->borrow_duration_hours : null;
+        $returnDateTime = Carbon::parse($request->return_date . ' ' . $request->return_time);
 
         $borrowRequest = BorrowRequest::create([
             'user_id'              => auth()->id(),
             'book_id'              => $book->id,
-            'borrow_duration_days' => $borrowDays,
-            'borrow_duration_hours'=> $borrowHours,
-            'return_date'          => $returnDate,
+            'return_date'          => $returnDateTime,
             'status'               => 'Pending',
             'quantity'             => $quantity,
         ]);

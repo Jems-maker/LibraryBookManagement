@@ -17,6 +17,19 @@
             <directory>app</directory>
         </include>
     </source>
+
+    <coverage>
+        <include>
+            <directory>app</directory>
+        </include>
+        <exclude>
+            <directory>app/Console</directory>
+        </exclude>
+    </coverage>
+
+    <logging>
+        <log type="coverage-text" target="php://stdout"/>
+    </logging>
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>

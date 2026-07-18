@@ -41,6 +41,9 @@
                                         <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 600;">{{ $borrowRequest->book->title }}</h3>
                                         <p style="margin: 0 0 2px; font-size: 14px; color: #4b5563;">{{ $borrowRequest->book->author->name ?? 'Unknown Author' }}</p>
                                         <p style="margin: 0 0 2px; font-size: 13px; color: #6b7280;">Category: {{ $borrowRequest->book->category->name ?? 'N/A' }}</p>
+                                        @if($borrowRequest->book->year_of_book)
+                                        <p style="margin: 2px 0 2px; font-size: 13px; color: #6b7280;">Year: {{ $borrowRequest->book->year_of_book }}</p>
+                                        @endif
                                         @if($borrowRequest->book->publisher)
                                         <p style="margin: 0 0 2px; font-size: 13px; color: #6b7280;">Publisher: {{ $borrowRequest->book->publisher->name }}</p>
                                         @endif
@@ -61,8 +64,18 @@
                                     <td style="padding: 8px 0; font-weight: 500;">{{ $borrowRequest->user->name }}</td>
                                 </tr>
                                 <tr>
+                                    <td style="padding: 8px 0; color: #6b7280;">Student ID</td>
+                                    <td style="padding: 8px 0; font-weight: 500;">{{ $borrowRequest->user->student_id }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #6b7280;">Course</td>
+                                    <td style="padding: 8px 0; font-weight: 500;">{{ $borrowRequest->user->profile?->course ?? $borrowRequest->user->studentProfile?->course ?? 'N/A' }}</td>
+                                </tr>
+                                <tr>
                                     <td style="padding: 8px 0; color: #6b7280;">Return Date</td>
-                                    <td style="padding: 8px 0; font-weight: 600; color: #111827;">{{ $borrowRequest->return_date ? $borrowRequest->return_date->format('F j, Y') : 'N/A' }}</td>
+                                    <td style="padding: 8px 0; font-weight: 600; color: #111827;">
+                                        {{ $borrowRequest->return_date ? $borrowRequest->return_date->format('F j, Y — h:i A') : 'N/A' }}
+                                    </td>
                                 </tr>
                             </table>
                         </td>

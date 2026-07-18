@@ -25,6 +25,7 @@ class ScannerApiController extends Controller
             'book.category',
             'book.publisher',
             'penalties',
+            'borrowRequest',
         ]);
 
         $record = null;
@@ -58,7 +59,11 @@ class ScannerApiController extends Controller
             $record->book->cover_image = asset('storage/' . $record->book->cover_image);
         }
 
-        return response()->json(['record' => $record]);
+        $settings = [
+            'penalty_amount' => (float) (\App\Models\Setting::getValue('late_penalty_per_day') ?? 10),
+        ];
+
+        return response()->json(['record' => $record, 'settings' => $settings]);
     }
 
     public function process(Request $request): JsonResponse
@@ -93,6 +98,16 @@ class ScannerApiController extends Controller
                 \Log::error('Claim notification email failed: ' . $e->getMessage());
             }
 
+            // Send a due-now notification if the due date has already passed at claim time.
+            if ($now->greaterThanOrEqualTo($record->due_date)) {
+                try {
+                    \Illuminate\Support\Facades\Mail::to($record->user->email)
+                        ->send(new \App\Mail\BookDueReminder($record, 'due_now'));
+                } catch (\Exception $e) {
+                    \Log::error('Due-now notification email failed: ' . $e->getMessage());
+                }
+            }
+
             return response()->json(['message' => 'Book successfully claimed by student.']);
         }
 
@@ -118,34 +133,27 @@ class ScannerApiController extends Controller
             $isOverdue = $now->gt($record->due_date);
             $penalty   = null;
             if ($isOverdue) {
-                $dailyRate = (float) (\App\Models\Setting::getValue('late_penalty_per_day') ?? 5);
-                $hourlyRate = $dailyRate / 24;
+                $penaltyAmount = (float) (\App\Models\Setting::getValue('late_penalty_per_day') ?? 10);
+                
+                // Calculate how many 24-hour periods (or fractions) the book is late
+                $minutesLate = $now->diffInMinutes($record->due_date);
+                if ($minutesLate <= 0) $minutesLate = 1; // if barely overdue by seconds
+                $periodsLate = (int) ceil($minutesLate / 1440);
+                
+                $amount = $periodsLate * $penaltyAmount;
+                
+                $penalty = \App\Models\Penalty::create([
+                    'borrow_record_id' => $record->id,
+                    'user_id'          => $record->user_id,
+                    'amount'           => $amount,
+                    'reason'           => 'Overdue Return',
+                    'remarks'          => "{$periodsLate} period(s) late (₱" . number_format($penaltyAmount, 2) . "/24hrs).",
+                    'status'           => 'Unpaid',
+                ]);
+            }
 
-                if ($record->borrowRequest && $record->borrowRequest->borrow_duration_hours) {
-                    // Hourly borrow: charge per hour overdue
-                    $hoursLate = (int) $now->diffInHours($record->due_date);
-                    $amount = round($hoursLate * $hourlyRate, 2);
-                    $penalty = \App\Models\Penalty::create([
-                        'borrow_record_id' => $record->id,
-                        'user_id'          => $record->user_id,
-                        'amount'           => $amount,
-                        'reason'           => 'Overdue Return (Hourly)',
-                        'remarks'          => "{$hoursLate} hour(s) late at P{$hourlyRate}/hr.",
-                        'status'           => 'Unpaid',
-                    ]);
-                } else {
-                    // Daily borrow: charge per day overdue
-                    $days  = (int) $now->diffInDays($record->due_date);
-                    $amount = $days * $dailyRate;
-                    $penalty = \App\Models\Penalty::create([
-                        'borrow_record_id' => $record->id,
-                        'user_id'          => $record->user_id,
-                        'amount'           => $amount,
-                        'reason'           => 'Overdue Return',
-                        'remarks'          => "{$days} day(s) late at P{$dailyRate}/day.",
-                        'status'           => 'Unpaid',
-                    ]);
-                }
+            if ($penalty) {
+                $record->load('penalties');
             }
 
             try {

@@ -10,6 +10,7 @@ export interface User {
   email_verified_at: string | null;
   profile?: StudentProfile;
   total_points?: number;
+  total_borrows?: number;
 }
 
 export interface StudentProfile {
@@ -54,6 +55,7 @@ export interface Book {
   publisher?: Publisher;
   total_borrows?: number;
   is_recommended?: boolean;
+  year_of_book: number | null;
 }
 
 export interface BorrowRecord {

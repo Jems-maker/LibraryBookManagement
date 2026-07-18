@@ -26,23 +26,45 @@ class SendOverdueReminders extends Command
     public function handle()
     {
         $now = now();
-        $tomorrow = now()->addDay()->toDateString();
+        $tomorrow = $now->copy()->addDay()->toDateString();
         
-        // Find books due tomorrow
-        $dueTomorrow = \App\Models\BorrowRecord::with(['user', 'book'])
-            ->where('status', 'Borrowed')
-            ->whereDate('due_date', $tomorrow)
-            ->get();
-            
-        foreach ($dueTomorrow as $record) {
-            \Illuminate\Support\Facades\Mail::to($record->user->email)
-                ->send(new \App\Mail\BookDueReminder($record, 'due_tomorrow'));
+        // 1. Find books due tomorrow (Only run this check exactly at 08:00)
+        $dueTomorrowCount = 0;
+        if ($now->format('H:i') === '08:00') {
+            $dueTomorrow = \App\Models\BorrowRecord::with(['user', 'book.author', 'book.category', 'borrowRequest'])
+                ->where('status', 'Borrowed')
+                ->whereDate('due_date', $tomorrow)
+                ->get();
+                
+            foreach ($dueTomorrow as $record) {
+                // Send reminder for anything due tomorrow
+                \Illuminate\Support\Facades\Mail::to($record->user->email)
+                    ->send(new \App\Mail\BookDueReminder($record, 'due_tomorrow'));
+                $dueTomorrowCount++;
+            }
         }
 
-        // Find books that are overdue (status is Borrowed but due date passed)
-        $overdue = \App\Models\BorrowRecord::with(['user', 'book'])
-            ->where('status', 'Borrowed')
-            ->whereDate('due_date', '<', $now->toDateString())
+        // Find books exactly due this minute, including Pending Claim so students get notified at deadline.
+        $nowStartString = $now->copy()->startOfMinute()->toDateTimeString();
+        $nowEndString = $now->copy()->endOfMinute()->toDateTimeString();
+        
+        $dueNow = \App\Models\BorrowRecord::with(['user', 'book.author', 'book.category'])
+            ->whereIn('status', ['Borrowed', 'Pending Claim'])
+            ->whereBetween('due_date', [$nowStartString, $nowEndString])
+            ->get();
+            
+        foreach ($dueNow as $record) {
+            \Illuminate\Support\Facades\Mail::to($record->user->email)
+                ->send(new \App\Mail\BookDueReminder($record, 'due_now'));
+        }
+
+        // 3. Find books that are exactly 20 minutes overdue (grace period)
+        $twentyMinsAgoStart = $now->copy()->subMinutes(20)->startOfMinute()->toDateTimeString();
+        $twentyMinsAgoEnd = $now->copy()->subMinutes(20)->endOfMinute()->toDateTimeString();
+
+        $overdue = \App\Models\BorrowRecord::with(['user', 'book.author', 'book.category'])
+            ->whereIn('status', ['Borrowed', 'Pending Claim'])
+            ->whereBetween('due_date', [$twentyMinsAgoStart, $twentyMinsAgoEnd])
             ->get();
             
         foreach ($overdue as $record) {
@@ -53,6 +75,12 @@ class SendOverdueReminders extends Command
                 ->send(new \App\Mail\BookDueReminder($record, 'overdue'));
         }
 
-        $this->info('Reminders sent successfully. ' . count($dueTomorrow) . ' due tomorrow, ' . count($overdue) . ' overdue.');
+        // Also catch any old borrowed records that slipped past and mark them overdue without spamming email
+        // Just in case the cron skipped a minute
+        \App\Models\BorrowRecord::whereIn('status', ['Borrowed', 'Pending Claim'])
+            ->where('due_date', '<', $twentyMinsAgoStart)
+            ->update(['status' => 'Overdue']);
+
+        $this->info('Reminders sent successfully. ' . $dueTomorrowCount . ' due tomorrow, ' . count($dueNow) . ' due now, ' . count($overdue) . ' overdue.');
     }
 }

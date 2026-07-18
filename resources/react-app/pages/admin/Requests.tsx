@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin';
 
@@ -7,6 +7,9 @@ export default function BorrowRequests() {
   const [page, setPage] = useState(1);
   const [approvingReq, setApprovingReq] = useState<any>(null);
   const queryClient = useQueryClient();
+
+  // Track previous notification count so we only refetch when something changes
+  const prevPendingRef = useRef<number | null>(null);
 
   const { data: requestsData, isLoading } = useQuery({
     queryKey: ['admin-requests', status, page],
@@ -25,6 +28,24 @@ export default function BorrowRequests() {
     mutationFn: (id: number) => adminApi.borrowRequests.reject(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-requests'] })
   });
+
+  // Smart poll: check pending request count every 10 seconds, refetch list only if count changed
+  const { data: notifData } = useQuery({
+    queryKey: ['admin-requests-notifications-poll'],
+    queryFn: () => adminApi.notifications(),
+    refetchInterval: 10000,
+  });
+
+  // When pending request count changes, invalidate the requests query
+  useEffect(() => {
+    if (!notifData) return;
+    const currentPending = notifData.pendingRequests;
+    const prev = prevPendingRef.current;
+    if (prev !== null && currentPending !== prev) {
+      queryClient.invalidateQueries({ queryKey: ['admin-requests'] });
+    }
+    prevPendingRef.current = currentPending;
+  }, [notifData, queryClient]);
 
   return (
     <div className="space-y-6">
@@ -72,12 +93,14 @@ export default function BorrowRequests() {
                     <div className="text-[10px] text-gray-400 font-mono mt-0.5">{req.book?.book_id}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-gray-500 font-medium">{req.return_date ? new Date(req.return_date).toLocaleDateString() : 'N/A'}</span>
+                    <span className="text-gray-500 font-medium">
+                      {req.return_date ? new Date(req.return_date).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : 'N/A'}
+                    </span>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2.5 py-1 text-xs font-bold rounded-xl ${req.status === 'Approved' ? 'bg-green-100 text-green-700' :
-                        req.status === 'Rejected' ? 'bg-red-100 text-red-700' :
-                          'bg-amber-100 text-amber-700'
+                      req.status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                        'bg-amber-100 text-amber-700'
                       }`}>
                       {req.status}
                     </span>
@@ -158,11 +181,14 @@ function ApproveModal({ req, onConfirm, onCancel, isLoading }: any) {
             <div className="border-t border-gray-200 pt-3">
               <p className="text-xs text-gray-400 uppercase font-semibold">Book</p>
               <p className="font-bold text-gray-900">{req.book?.title}</p>
-              <p className="text-xs text-gray-500 font-mono">{req.book?.book_id}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{req.book?.author?.name || 'Unknown Author'} &bull; {req.book?.publisher?.name || 'Unknown Publisher'}</p>
+              <p className="text-xs text-gray-500 font-mono mt-1">{req.book?.book_id}</p>
             </div>
             <div className="border-t border-gray-200 pt-3">
               <p className="text-xs text-gray-400 uppercase font-semibold">Return Date</p>
-              <p className="font-semibold text-gray-900">{req.return_date ? new Date(req.return_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</p>
+              <p className="font-semibold text-gray-900">
+                {req.return_date ? new Date(req.return_date).toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : 'N/A'}
+              </p>
             </div>
           </div>
         </div>

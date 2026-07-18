@@ -8,8 +8,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Run library reminders daily at 8:00 AM
-Schedule::command('library:send-reminders')->dailyAt('08:00');
+// Run library reminders every minute (exact times are handled inside the command)
+Schedule::command('library:send-reminders')->everyMinute();
 
 // Auto-expire unclaimed book requests every minute
 Schedule::command('claims:auto-expire')->everyMinute();

@@ -17,7 +17,6 @@ export default function Settings() {
     head_role: 'School Principal',
     head_name: '',
     penalty_amount: '10',
-    penalty_period: 'day',
     admin_name: '',
     admin_email: '',
   });
@@ -32,7 +31,6 @@ export default function Settings() {
         head_role: settings.head_role || 'School Principal',
         head_name: settings.head_name || '',
         penalty_amount: settings.penalty_amount?.toString() || '10',
-        penalty_period: settings.penalty_period || 'day',
         admin_name: settings.admin_name || '',
         admin_email: settings.admin_email || '',
       });
@@ -56,7 +54,6 @@ export default function Settings() {
     data.append('head_role', formData.head_role);
     data.append('head_name', formData.head_name);
     data.append('penalty_amount', formData.penalty_amount);
-    data.append('penalty_period', formData.penalty_period);
     data.append('admin_name', formData.admin_name);
     data.append('admin_email', formData.admin_email);
     if (logo) data.append('logo', logo);
@@ -143,15 +140,8 @@ export default function Settings() {
             <h2 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 mb-4">Library Penalty</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Penalty Amount (₱)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Penalty Amount (per 24 hrs overdue, ₱)</label>
                 <input type="number" step="0.01" min="0" value={formData.penalty_amount} onChange={e => setFormData({ ...formData, penalty_amount: e.target.value })} className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Penalty Period</label>
-                <select value={formData.penalty_period} onChange={e => setFormData({ ...formData, penalty_period: e.target.value })} className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="day">Per Day</option>
-                  <option value="hour">Per Hour</option>
-                </select>
               </div>
             </div>
           </div>

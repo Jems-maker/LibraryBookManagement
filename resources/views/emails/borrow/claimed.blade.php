@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -47,6 +48,9 @@
                                         <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 600;">{{ $record->book->title }}</h3>
                                         <p style="margin: 0 0 2px; font-size: 14px; color: #4b5563;">{{ $record->book->author->name ?? '' }}</p>
                                         <p style="margin: 0; font-size: 13px; color: #6b7280;">Category: {{ $record->book->category->name ?? '' }}</p>
+                                        @if($record->book->year_of_book)
+                                        <p style="margin: 2px 0 0; font-size: 13px; color: #6b7280;">Year: {{ $record->book->year_of_book }}</p>
+                                        @endif
                                     </td>
                                 </tr>
                             </table>
@@ -67,8 +71,12 @@
                                     <td style="padding: 8px 0; font-weight: 500;">{{ $record->user->student_id }}</td>
                                 </tr>
                                 <tr>
+                                    <td style="padding: 8px 0; color: #6b7280;">Course</td>
+                                    <td style="padding: 8px 0; font-weight: 500;">{{ $record->user->profile?->course ?? $record->user->studentProfile?->course ?? 'N/A' }}</td>
+                                </tr>
+                                <tr>
                                     <td style="padding: 8px 0; color: #6b7280;">Due Date</td>
-                                    <td style="padding: 8px 0; font-weight: 600; color: #111827;">{{ $record->due_date ? $record->due_date->format('F j, Y') : 'N/A' }}</td>
+                                    <td style="padding: 8px 0; font-weight: 600; color: #111827;">{{ $record->due_date ? $record->due_date->format('F j, Y — h:i A') : 'N/A' }}</td>
                                 </tr>
                             </table>
                         </td>

@@ -116,9 +116,12 @@ const AdminLayout = () => {
             <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
             </button>
-            <h1 className="text-lg font-bold text-gray-800 hidden sm:block">Library Book Management</h1>
+            <h1 className="text-lg font-bold text-gray-800 hidden sm:block">Library Book Management Dashboard</h1>
           </div>
           <div className="ml-auto flex items-center gap-4">
+            <span className="hidden sm:block text-sm font-medium text-gray-500 mr-2">
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
             {/* Notification Bell */}
             <NavLink to="/admin/requests" className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

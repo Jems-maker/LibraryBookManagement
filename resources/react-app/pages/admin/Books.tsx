@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin';
 import type { Book, Category, Author, Publisher } from '@/types';
 import SearchableSelect from '@/components/SearchableSelect';
+import ConfirmModal from '@/components/ConfirmModal';
 
 // Simplified Debounce Hook for local use
 function useDebounce<T>(value: T, delay = 400): T {
@@ -22,6 +23,7 @@ export default function Books() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Book | null>(null);
 
   const { data: booksData, isLoading } = useQuery({
     queryKey: ['admin-books', debouncedSearch, page],
@@ -47,13 +49,14 @@ export default function Books() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => adminApi.books.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-books'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-books'] });
+      setDeleteTarget(null);
+    }
   });
 
-  const handleDelete = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this book?')) {
-      deleteMutation.mutate(id);
-    }
+  const handleDelete = () => {
+    if (deleteTarget) deleteMutation.mutate(deleteTarget.id);
   };
 
   const openModal = (book: Book | null = null) => {
@@ -127,8 +130,12 @@ export default function Books() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button onClick={() => openModal(book)} className="text-blue-600 hover:text-blue-800 font-semibold text-sm mr-4">Edit</button>
-                    <button onClick={() => handleDelete(book.id)} className="text-red-600 hover:text-red-800 font-semibold text-sm">Delete</button>
+                    <button onClick={() => openModal(book)} title="Edit" className="p-2 rounded-lg bg-white text-blue-600 border border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                    </button>
+                    <button onClick={() => setDeleteTarget(book)} title="Delete" className="p-2 rounded-lg bg-white text-red-600 border border-gray-200 hover:bg-red-50 hover:border-red-300 transition-colors">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.061-.94-1.75-1.975-1.75H9.225c-1.035 0-1.975.69-1.975 1.75v.916" /></svg>
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -157,6 +164,14 @@ export default function Books() {
           onClose={() => setIsModalOpen(false)}
         />
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="Delete Book"
+        message={`Are you sure you want to delete ${deleteTarget?.title ?? 'this book'}? This action cannot be undone.`}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
@@ -168,7 +183,7 @@ function BookModal({ book, categories, authors, publishers, onClose }: any) {
     author_id: book?.author_id || '',
     category_id: book?.category_id || '',
     publisher_id: book?.publisher_id || '',
-    isbn: book?.isbn || '',
+    year_of_book: book?.year_of_book || '',
     total_copies: book?.total_copies || 1,
     status: book?.status || 'Available',
     description: book?.description || '',
@@ -187,7 +202,11 @@ function BookModal({ book, categories, authors, publishers, onClose }: any) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const data = new FormData();
-    Object.entries(formData).forEach(([key, value]) => data.append(key, String(value)));
+    Object.entries(formData).forEach(([key, value]) => {
+      if (value !== '' && value !== null && value !== undefined) {
+        data.append(key, String(value));
+      }
+    });
     if (cover) data.append('cover_image', cover);
     mutation.mutate(data);
   };
@@ -207,7 +226,7 @@ function BookModal({ book, categories, authors, publishers, onClose }: any) {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Author</label>
-              <SearchableSelect 
+              <SearchableSelect
                 options={authors.map((a: any) => ({ label: a.name, value: a.id }))}
                 value={formData.author_id}
                 onChange={(val: any) => setFormData({ ...formData, author_id: val })}
@@ -215,17 +234,8 @@ function BookModal({ book, categories, authors, publishers, onClose }: any) {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Category</label>
-              <SearchableSelect 
-                options={categories.map((c: any) => ({ label: c.name, value: c.id }))}
-                value={formData.category_id}
-                onChange={(val: any) => setFormData({ ...formData, category_id: val })}
-                placeholder="Select Category"
-              />
-            </div>
-            <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Publisher</label>
-              <SearchableSelect 
+              <SearchableSelect
                 options={publishers.map((p: any) => ({ label: p.name, value: p.id }))}
                 value={formData.publisher_id}
                 onChange={(val: any) => setFormData({ ...formData, publisher_id: val })}
@@ -233,9 +243,22 @@ function BookModal({ book, categories, authors, publishers, onClose }: any) {
               />
             </div>
             <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Category</label>
+              <SearchableSelect
+                options={categories.map((c: any) => ({ label: c.name, value: c.id }))}
+                value={formData.category_id}
+                onChange={(val: any) => setFormData({ ...formData, category_id: val })}
+                placeholder="Select Category"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Total Copies</label>
               <input type="number" required min="1" value={formData.total_copies} onChange={e => setFormData({ ...formData, total_copies: Number(e.target.value) })} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
               <p className="text-[10px] text-gray-400 mt-1">Available copies auto-set to total</p>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Year of Book</label>
+              <input type="number" value={formData.year_of_book || ''} onChange={e => setFormData({ ...formData, year_of_book: e.target.value ? Number(e.target.value) : null })} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. 2020" />
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-1">Cover Image</label>

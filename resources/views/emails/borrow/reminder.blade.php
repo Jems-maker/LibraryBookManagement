@@ -20,7 +20,13 @@
     <div class="container">
         <div class="header">
             <h2 style="margin: 0;">
-                {{ $type === 'overdue' ? 'Book Overdue Notice' : 'Book Due Tomorrow' }}
+                @if($type === 'overdue')
+                    Book Overdue Notice
+                @elseif($type === 'due_now')
+                    Book Due Now
+                @else
+                    Book Due Tomorrow
+                @endif
             </h2>
         </div>
         <div class="content">
@@ -28,16 +34,25 @@
             
             @if($type === 'overdue')
                 <p>This is an urgent notice that the following book is now <strong>OVERDUE</strong>.</p>
-                <p>Please return it to the library immediately. A penalty of 10 currency per day will be applied until the book is returned.</p>
+                <p>Please return it to the library immediately. A penalty of &#8369;{{ number_format($penaltyAmount, 2) }} per 24 hours overdue will be applied until the book is returned.</p>
+            @elseif($type === 'due_now')
+                <p>This is a notice that your scheduled time to return the following book has <strong>arrived</strong>.</p>
+                <p>Please return it to the library immediately. A penalty of &#8369;{{ number_format($penaltyAmount, 2) }} per 24 hours overdue will be applied if not returned.</p>
             @else
                 <p>This is a friendly reminder that the following book is due <strong>tomorrow</strong>.</p>
                 <p>Please return it to the library by the due date to avoid any late penalties.</p>
             @endif
             
             <div class="details">
-                <p><strong>Book Title:</strong> {{ $record->book->title }}</p>
                 <p><strong>Borrow ID:</strong> {{ $record->borrow_id }}</p>
-                <p><strong>Due Date:</strong> {{ \Carbon\Carbon::parse($record->due_date)->format('M d, Y') }}</p>
+                <p><strong>Book Title:</strong> {{ $record->book->title }}</p>
+                <p><strong>Author:</strong> {{ $record->book->author?->name ?? 'N/A' }}</p>
+                <p><strong>Category:</strong> {{ $record->book->category?->name ?? 'N/A' }}</p>
+                @if($record->book->year_of_book)
+                <p><strong>Year:</strong> {{ $record->book->year_of_book }}</p>
+                @endif
+                <p><strong>Course:</strong> {{ $record->user->profile?->course ?? $record->user->studentProfile?->course ?? 'N/A' }}</p>
+                <p><strong>Due Date:</strong> <span style="color: {{ $type === 'overdue' ? '#EF4444' : '#F59E0B' }}; font-weight: bold;">{{ \Carbon\Carbon::parse($record->due_date)->format('M d, Y h:i A') }}</span></p>
             </div>
             
             <p>Thank you for using our Library System!</p>

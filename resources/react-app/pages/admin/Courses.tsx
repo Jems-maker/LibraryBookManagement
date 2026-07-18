@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin';
+import ConfirmModal from '@/components/ConfirmModal';
 
 function useDebounce<T>(value: T, delay = 400): T {
   const [debouncedValue, setDebouncedValue] = React.useState<T>(value);
@@ -19,6 +20,7 @@ export default function Courses() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<any | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
 
   const { data: coursesData, isLoading } = useQuery({
     queryKey: ['admin-courses', debouncedSearch, page],
@@ -27,7 +29,10 @@ export default function Courses() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => adminApi.courses.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-courses'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-courses'] });
+      setDeleteTarget(null);
+    }
   });
 
   const openEdit = (course: any) => {
@@ -38,6 +43,10 @@ export default function Courses() {
   const openAdd = () => {
     setEditingCourse(null);
     setIsModalOpen(true);
+  };
+
+  const handleDelete = () => {
+    if (deleteTarget) deleteMutation.mutate(deleteTarget.id);
   };
 
   return (
@@ -83,8 +92,12 @@ export default function Courses() {
                     <span className="text-gray-500">{course.description || '—'}</span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button onClick={() => openEdit(course)} className="text-blue-600 hover:text-blue-800 font-semibold text-sm mr-4">Edit</button>
-                    <button onClick={() => { if (window.confirm('Delete this course?')) deleteMutation.mutate(course.id); }} className="text-red-600 hover:text-red-800 font-semibold text-sm">Delete</button>
+                    <button onClick={() => openEdit(course)} title="Edit" className="p-2 rounded-lg bg-white text-blue-600 border border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                    </button>
+                    <button onClick={() => setDeleteTarget(course)} title="Delete" className="p-2 rounded-lg bg-white text-red-600 border border-gray-200 hover:bg-red-50 hover:border-red-300 transition-colors">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.061-.94-1.75-1.975-1.75H9.225c-1.035 0-1.975.69-1.975 1.75v.916" /></svg>
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -106,6 +119,14 @@ export default function Courses() {
       {isModalOpen && (
         <CourseModal course={editingCourse} onClose={() => setIsModalOpen(false)} />
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="Delete Course"
+        message={`Are you sure you want to delete ${deleteTarget?.name ?? 'this course'}? This action cannot be undone.`}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
@@ -143,13 +164,13 @@ function CourseModal({ course, onClose }: { course: any, onClose: () => void }) 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Course Name / Acronym</label>
-            <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. BSCS" />
+            <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. BSCS" />
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Description (Optional)</label>
-            <input type="text" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Bachelor of Science in Computer Science" />
+            <input type="text" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Bachelor of Science in Computer Science" />
           </div>
-          
+
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200">Cancel</button>
             <button type="submit" disabled={mutation.isPending} className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50">

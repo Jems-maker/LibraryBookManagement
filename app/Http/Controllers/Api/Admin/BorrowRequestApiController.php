@@ -18,7 +18,7 @@ class BorrowRequestApiController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = BorrowRequest::with(['user.profile', 'book.author', 'book.category']);
+        $query = BorrowRequest::with(['user.profile', 'book.author', 'book.category', 'book.publisher']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);

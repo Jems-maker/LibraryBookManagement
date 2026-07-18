@@ -27,7 +27,6 @@ class SettingApiController extends Controller
         $data = [
             'admin_name'  => $user->name,
             'admin_email' => $user->email,
-            'penalty_period' => 'day',
         ];
 
         foreach (self::$keyMap as $apiKey => $dbKey) {
@@ -56,7 +55,6 @@ class SettingApiController extends Controller
             'head_role'      => 'sometimes|in:School President,School Principal',
             'head_name'      => 'sometimes|string|max:255',
             'penalty_amount' => 'sometimes|numeric|min:0',
-            'penalty_period' => 'sometimes|in:day,hour',
             'logo'           => 'nullable|image|max:2048',
             'avatar'         => 'nullable|image|max:2048',
             'admin_name'     => 'sometimes|string|max:255',
@@ -90,7 +88,7 @@ class SettingApiController extends Controller
         $user->save();
 
         // Build response
-        $response = ['penalty_period' => 'day'];
+        $response = [];
         foreach (self::$keyMap as $apiKey => $dbKey) {
             $val = Setting::getValue($dbKey);
             if ($apiKey === 'school_logo' && $val) {

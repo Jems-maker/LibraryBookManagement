@@ -25,6 +25,13 @@ const HistoryIcon = () => (
   </svg>
 );
 
+const RequestsIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+      d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+  </svg>
+);
+
 export default function Navbar() {
   const { user, logout } = useAuth();
   const location = useLocation();
@@ -49,14 +56,16 @@ export default function Navbar() {
   const isActive = (path: string) => location.pathname === path;
 
   const navLinks = [
-    { to: '/dashboard', label: 'Browse Books', icon: <BookIcon /> },
     { to: '/profile', label: 'Profile', icon: <UserIcon /> },
+    { to: '/dashboard', label: 'Browse Books', icon: <BookIcon /> },
+    { to: '/requests', label: 'Requests', icon: <RequestsIcon /> },
     { to: '/history', label: 'History', icon: <HistoryIcon /> },
   ];
 
   return (
-    <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <>
+      <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link to="/dashboard" className="flex items-center gap-2.5 group">
             <div className="w-9 h-9 flex items-center justify-center shrink-0">
@@ -102,63 +111,81 @@ export default function Navbar() {
 
             <button onClick={() => setMobileOpen(true)} className="md:hidden p-2 rounded-xl text-gray-600 hover:bg-gray-100 transition-colors">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 8h16M4 16h16" />
               </svg>
             </button>
           </div>
         </div>
       </div>
+    </nav>
 
-      {/* Mobile menu — anchored from hamburger */}
+    {/* Mobile menu — Sidebar */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden" onClick={() => setMobileOpen(false)}>
-          <div className="absolute right-4 top-[60px] w-[280px] bg-white rounded-2xl shadow-2xl border border-gray-100 p-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-gray-900 text-sm">Menu</h3>
-              <button onClick={() => setMobileOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 transition-colors">
-                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
+          <div 
+            className="absolute right-0 top-0 h-screen w-[70%] max-w-[320px] bg-white shadow-2xl flex flex-col animate-[slideLeft_0.3s_ease-out]" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 pb-2 flex items-center justify-between border-b border-gray-100 shrink-0">
+              <h3 className="font-bold text-gray-900 text-lg">Menu</h3>
+              <button onClick={() => setMobileOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 transition-colors text-gray-500">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <nav className="space-y-0.5">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive(link.to)
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                >
-                  {link.icon}
-                  {link.label}
-                  {link.to === '/profile' && activeBorrows && activeBorrows.length > 0 && (
-                    <span className="ml-auto px-2 py-0.5 bg-blue-500 text-white text-[10px] font-bold rounded-full">{activeBorrows.length}</span>
-                  )}
-                </Link>
-              ))}
-            </nav>
+            <div className="flex-1 overflow-y-auto py-4 px-4">
+              <nav className="space-y-1">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${isActive(link.to)
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                  >
+                    {link.icon}
+                    {link.label}
+                    {link.to === '/profile' && activeBorrows && activeBorrows.length > 0 && (
+                      <span className="ml-auto px-2 py-0.5 bg-blue-500 text-white text-[10px] font-bold rounded-full">{activeBorrows.length}</span>
+                    )}
+                  </Link>
+                ))}
+              </nav>
+            </div>
 
-            <div className="pt-3 mt-3 border-t border-gray-100 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
+            <div className="p-4 border-t border-gray-100 bg-gray-50 mt-auto shrink-0">
+              <div className="flex items-center gap-3 mb-4">
                 <img
                   src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name ?? '')}&color=7F9CF5&background=EBF4FF&bold=true&size=80`}
                   alt={user?.name}
-                  className="w-8 h-8 rounded-full ring-2 ring-blue-100 object-cover"
+                  className="w-10 h-10 rounded-full ring-2 ring-blue-100 object-cover shrink-0"
                 />
-                <div>
-                  <p className="text-sm font-semibold text-gray-900 leading-none">{user?.name}</p>
-                  <p className="text-[11px] text-gray-400">{user?.email}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-gray-900 truncate leading-tight">{user?.name}</p>
+                  <p className="text-[11px] text-gray-500 truncate mt-0.5">{user?.email}</p>
                 </div>
               </div>
-              <button onClick={logout} className="text-xs text-red-500 font-medium hover:text-red-600 transition-colors">Sign out</button>
+              <button 
+                onClick={logout} 
+                className="w-full py-2 bg-white border border-gray-200 rounded-xl text-sm text-red-600 font-bold hover:bg-red-50 hover:border-red-100 transition-colors"
+              >
+                Sign out
+              </button>
             </div>
           </div>
         </div>
       )}
-    </nav>
+      <style>{`
+        @keyframes slideLeft {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
+        }
+      `}</style>
+    </>
   );
 }

@@ -8,6 +8,7 @@ export const studentApi = {
   updateGender: (gender: string) => api.patch('/api/student/profile/gender', { gender }),
 
   // Borrow requests
+  requests: () => api.get<BorrowRequest[]>('/api/student/requests'),
   borrowBook: (bookId: number, data: { return_date: string; quantity?: number }) =>
     api.post<{ message: string }>(`/api/student/borrow/${bookId}`, data),
 

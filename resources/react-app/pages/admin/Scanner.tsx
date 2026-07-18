@@ -206,18 +206,29 @@ export default function Scanner() {
     const isOverdue = now > dueDate && record.status !== 'Returned';
     const isEarlyReturn = now < dueDate;
 
-    const dueDateStr = dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const todayStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const dueDateStr = dueDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+    const todayStr = now.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
 
     if (action === 'return') {
-      const daysEarly = isEarlyReturn ? Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;
-      const daysLate = isOverdue ? Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+      
+      const hoursEarly = isEarlyReturn ? Math.max(0, Math.floor((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60))) : 0;
+      const daysEarly = isEarlyReturn ? Math.max(0, Math.floor((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
+      const minutesLate = isOverdue ? Math.max(1, Math.ceil((now.getTime() - dueDate.getTime()) / 60000)) : 0;
+      const periodsLate = isOverdue ? Math.ceil(minutesLate / 1440) : 0;
+
+      const penaltySettingAmount = lookupData?.settings?.penalty_amount ?? 10;
+      const penaltyAmount = periodsLate * penaltySettingAmount;
 
       let message = '';
       if (isOverdue) {
-        message = `This book is overdue by ${daysLate} day(s). A penalty of ₱${daysLate * 5}.00 will be applied.`;
+        message = `This book is overdue. A penalty of ₱${penaltyAmount.toFixed(2)} will be applied for ${periodsLate} period(s) late.`;
       } else if (isEarlyReturn) {
-        message = `This book is being returned ${daysEarly} day(s) before the due date. Are you sure you want to process this early return?`;
+        const msEarly = dueDate.getTime() - now.getTime();
+        const hoursEarly = Math.floor(msEarly / (1000 * 60 * 60));
+        const daysEarly = Math.floor(msEarly / (1000 * 60 * 60 * 24));
+        message = daysEarly >= 1
+          ? `This book is being returned ${daysEarly} day(s) early. Are you sure you want to process this early return?`
+          : `This book is being returned ${hoursEarly} hour(s) early. Are you sure you want to process this early return?`;
       } else {
         message = 'This book is being returned on time. Proceed with the return?';
       }
@@ -230,11 +241,14 @@ export default function Scanner() {
       ];
 
       if (isOverdue) {
-        details.push({ label: 'Penalty', value: `₱${daysLate * 5}.00`, highlight: true });
+        details.push({ label: 'Penalty', value: `₱${penaltyAmount.toFixed(2)}`, highlight: true });
       }
 
       if (isEarlyReturn) {
-        details.push({ label: 'Days Early', value: `${daysEarly} day(s)` });
+        const msEarly = dueDate.getTime() - now.getTime();
+        const hoursEarly = Math.floor(msEarly / (1000 * 60 * 60));
+        const daysEarly = Math.floor(msEarly / (1000 * 60 * 60 * 24));
+        details.push({ label: 'Time Early', value: daysEarly >= 1 ? `${daysEarly} day(s)` : `${hoursEarly} hour(s)` });
       }
 
       setConfirmModal({
@@ -339,7 +353,7 @@ export default function Scanner() {
                         'bg-gray-100 text-gray-700'
                     }`}>{record.status}</span>
                   <h3 className="font-bold text-gray-900 mt-2 text-lg leading-tight">{record.book?.title}</h3>
-                  <p className="text-sm text-gray-500 mt-1">{record.book?.author?.name}</p>
+                  <p className="text-sm text-gray-500 mt-1">{record.book?.author?.name || 'Unknown Author'} &bull; {record.book?.publisher?.name || 'Unknown Publisher'}</p>
                   <p className="text-xs font-mono text-gray-400 mt-2">ID: {record.borrow_id}</p>
                 </div>
               </div>
@@ -353,7 +367,7 @@ export default function Scanner() {
                 <div>
                   <p className="text-[10px] uppercase font-bold text-gray-400">Due Date</p>
                   <p className={`font-bold ${new Date() > new Date(record.due_date) && record.status !== 'Returned' ? 'text-red-600' : 'text-gray-900'}`}>
-                    {new Date(record.due_date).toLocaleDateString()}
+                    {new Date(record.due_date).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                   </p>
                 </div>
               </div>

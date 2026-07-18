@@ -43,6 +43,9 @@
                     <p style="margin:0 0 4px;font-size:11px;font-weight:600;text-transform:uppercase;color:#9ca3af;letter-spacing:0.5px;">{{ $record->book?->category?->name ?? 'Book' }}</p>
                     <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#111827;line-height:1.3;">{{ $record->book?->title ?? 'Unknown Book' }}</p>
                     <p style="margin:0;font-size:13px;color:#6b7280;">by {{ $record->book?->author?->name ?? '—' }}</p>
+                    @if($record->book?->year_of_book)
+                    <p style="margin:2px 0 0;font-size:12px;color:#6b7280;">Year: {{ $record->book->year_of_book }}</p>
+                    @endif
                 </td>
             </tr>
         </table>
@@ -73,6 +76,16 @@
             <tr><td colspan="2" style="padding-top:12px;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;">
                     <tr>
+                        <td style="padding-bottom:8px;">
+                            <p style="margin:0 0 4px;font-size:10px;font-weight:600;text-transform:uppercase;color:#9ca3af;letter-spacing:0.5px;">Student</p>
+                            <p style="margin:0;font-size:14px;font-weight:700;color:#111827;">{{ $record->user?->name ?? 'N/A' }}</p>
+                        </td>
+                        <td style="padding-bottom:8px;">
+                            <p style="margin:0 0 4px;font-size:10px;font-weight:600;text-transform:uppercase;color:#9ca3af;letter-spacing:0.5px;">Course</p>
+                            <p style="margin:0;font-size:14px;font-weight:700;color:#111827;">{{ $record->user?->profile?->course ?? $record->user?->studentProfile?->course ?? 'N/A' }}</p>
+                        </td>
+                    </tr>
+                    <tr>
                         <td width="50%">
                             <p style="margin:0 0 4px;font-size:10px;font-weight:600;text-transform:uppercase;color:#9ca3af;letter-spacing:0.5px;">Borrow Date</p>
                             <p style="margin:0;font-size:14px;font-weight:700;color:#111827;">{{ $record->borrow_date?->format('M d, Y') ?? 'N/A' }}</p>
@@ -89,7 +102,7 @@
 
     {{-- Penalty notice if applicable --}}
     @php
-        $penalty = $record->penalties?->where('reason', 'Overdue Return')->first();
+        $penalty = $record->penalties?->whereIn('reason', ['Overdue Return', 'Overdue Return (Hourly)'])->first();
     @endphp
     @if($penalty)
     <tr><td style="padding:20px 40px 0;">

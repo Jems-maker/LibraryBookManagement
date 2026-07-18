@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin';
 import type { User } from '@/types';
+import ConfirmModal from '@/components/ConfirmModal';
 
 function useDebounce<T>(value: T, delay = 400): T {
   const [debouncedValue, setDebouncedValue] = React.useState<T>(value);
@@ -22,10 +23,14 @@ export default function Students() {
 
   const [editingStudent, setEditingStudent] = useState<User | null>(null);
   const [isAddingStudent, setIsAddingStudent] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => adminApi.students.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-students'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-students'] });
+      setDeleteTarget(null);
+    }
   });
 
   const { data: studentsData, isLoading } = useQuery({
@@ -53,55 +58,49 @@ export default function Students() {
           />
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-600">
-            <thead className="bg-gray-50 text-xs uppercase text-gray-400">
-              <tr>
-                <th className="px-6 py-4 font-semibold">Student Info</th>
-                <th className="px-6 py-4 font-semibold">Course & Year</th>
-                <th className="px-6 py-4 font-semibold">Points</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
-                <th className="px-6 py-4 font-semibold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {isLoading ? (
-                <tr><td colSpan={5} className="text-center py-10 text-gray-400">Loading...</td></tr>
-              ) : studentsData?.data.map((student) => (
-                <tr key={student.id} className="hover:bg-gray-50/50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold shrink-0">
-                        {student.name.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="font-bold text-gray-900">{student.name}</div>
-                        <div className="text-xs text-gray-400">{student.email}</div>
-                        <div className="text-[10px] text-gray-400 font-mono mt-0.5">{student.student_id}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="font-semibold text-gray-900">{student.profile?.course ?? '—'}</div>
-                    <div className="text-xs text-gray-400">{student.profile?.year_level ? `Year ${student.profile.year_level}` : '—'}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-600 font-bold text-xs rounded-lg border border-amber-200">
-                      ⭐ {student.total_points ?? 0}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-xl">Active</span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button onClick={() => setEditingStudent(student)} className="text-blue-600 hover:text-blue-800 font-semibold text-sm mr-4">Edit</button>
-                    <button onClick={() => { if (window.confirm('Delete this student?')) deleteMutation.mutate(student.id); }} className="text-red-600 hover:text-red-800 font-semibold text-sm">Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {isLoading ? (
+          <div className="p-10 text-center text-gray-400">Loading...</div>
+        ) : (
+          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+            {studentsData?.data.map((student) => (
+              <div key={student.id} className="rounded-2xl border border-gray-100 bg-gray-50/50 p-4 hover:shadow-md transition-shadow flex flex-col items-center text-center">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
+                    {student.name.charAt(0)}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-bold text-gray-900 truncate">{student.name}</div>
+                    <div className="text-xs text-gray-500 truncate">{student.email}</div>
+                    <div className="text-[10px] text-gray-400 font-mono">{student.student_id}</div>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-1 w-full">
+                  <div className="text-xs text-gray-500">Course: <span className="font-semibold text-gray-700">{student.profile?.course ?? '—'}</span></div>
+                  <div className="text-xs text-gray-500">Year: <span className="font-semibold text-gray-700">{student.profile?.year_level ? `${student.profile.year_level}` : '—'}</span></div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2 justify-center">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-600 font-bold text-xs rounded-lg border border-amber-200">
+                    ⭐ {student.total_points ?? 0} pts
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-600 font-bold text-xs rounded-lg border border-indigo-200">
+                    📚 {student.total_borrows ?? 0} borrows
+                  </span>
+                </div>
+                <div className="mt-3 flex justify-center gap-3 border-t border-gray-100 pt-3 w-full">
+                  <button onClick={() => setEditingStudent(student)} title="Edit" className="p-2 rounded-lg bg-white text-blue-600 border border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                  </button>
+                  <button onClick={() => setDeleteTarget(student)} title="Delete" className="p-2 rounded-lg bg-white text-red-600 border border-gray-200 hover:bg-red-50 hover:border-red-300 transition-colors">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.061-.94-1.75-1.975-1.75H9.225c-1.035 0-1.975.69-1.975 1.75v.916" /></svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+            {(!studentsData?.data || studentsData.data.length === 0) && (
+              <div className="col-span-full text-center py-10 text-gray-400">No students found.</div>
+            )}
+          </div>
+        )}
 
         {studentsData && studentsData.last_page > 1 && (
           <div className="p-4 border-t border-gray-100 flex items-center justify-between">
@@ -121,6 +120,14 @@ export default function Students() {
       {isAddingStudent && (
         <AddStudentModal onClose={() => setIsAddingStudent(false)} />
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="Delete Student"
+        message={`Are you sure you want to delete ${deleteTarget?.name ?? 'this student'}? This action cannot be undone.`}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

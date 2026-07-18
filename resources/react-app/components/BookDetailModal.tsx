@@ -147,6 +147,120 @@ function DatePickerModal({
   );
 }
 
+// ── Time Picker Modal ────────────────────────────────────────────────────────
+function TimePickerModal({
+  value,
+  onSelect,
+  onClose,
+}: {
+  value: string;
+  onSelect: (time: string) => void;
+  onClose: () => void;
+}) {
+  // value is expected to be "HH:mm" (24-hour format)
+  const initialDate = new Date();
+  if (value) {
+    const [h, m] = value.split(':');
+    initialDate.setHours(parseInt(h, 10));
+    initialDate.setMinutes(parseInt(m, 10));
+  } else {
+    // Default to next whole hour
+    initialDate.setHours(initialDate.getHours() + 1);
+    initialDate.setMinutes(0);
+  }
+
+  let initHour12 = initialDate.getHours() % 12 || 12;
+  const [hour, setHour] = useState(initHour12);
+  const [minute, setMinute] = useState(Math.floor(initialDate.getMinutes() / 5) * 5);
+  const [isPM, setIsPM] = useState(initialDate.getHours() >= 12);
+
+  const handleConfirm = () => {
+    let h24 = hour;
+    if (isPM && hour !== 12) h24 += 12;
+    if (!isPM && hour === 12) h24 = 0;
+    
+    const hh = String(h24).padStart(2, '0');
+    const mm = String(minute).padStart(2, '0');
+    onSelect(`${hh}:${mm}`);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm z-10 p-6 animate-scale-up">
+        
+        <div className="text-center mb-6">
+          <h3 className="text-lg font-bold text-gray-900">Select Time</h3>
+          <div className="text-3xl font-black text-blue-600 mt-2 tracking-tight">
+            {hour}:{String(minute).padStart(2, '0')} {isPM ? 'PM' : 'AM'}
+          </div>
+        </div>
+
+        <div className="flex gap-4 mb-6">
+          {/* Hours Column */}
+          <div className="flex-1 bg-gray-50 rounded-2xl p-2 h-48 overflow-y-auto hide-scrollbar border border-gray-100">
+            <div className="text-[10px] font-bold text-gray-400 uppercase text-center mb-2">Hour</div>
+            <div className="flex flex-col gap-1">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((h) => (
+                <button
+                  key={h}
+                  onClick={() => setHour(h)}
+                  className={`py-2 rounded-xl text-sm font-bold transition-all ${hour === h ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-200'}`}
+                >
+                  {h}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Minutes Column */}
+          <div className="flex-1 bg-gray-50 rounded-2xl p-2 h-48 overflow-y-auto hide-scrollbar border border-gray-100">
+            <div className="text-[10px] font-bold text-gray-400 uppercase text-center mb-2">Minute</div>
+            <div className="flex flex-col gap-1">
+              {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setMinute(m)}
+                  className={`py-2 rounded-xl text-sm font-bold transition-all ${minute === m ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-200'}`}
+                >
+                  {String(m).padStart(2, '0')}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* AM/PM Toggle */}
+        <div className="flex gap-2 p-1 bg-gray-100 rounded-xl mb-6">
+          <button
+            onClick={() => setIsPM(false)}
+            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${!isPM ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            AM
+          </button>
+          <button
+            onClick={() => setIsPM(true)}
+            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${isPM ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            PM
+          </button>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700 transition">
+            Cancel
+          </button>
+          <button onClick={handleConfirm} className="px-6 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl shadow-md hover:bg-blue-700 transition active:scale-95">
+            Set Time
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Star Rating ───────────────────────────────────────────────────────────────
 function StarRating({ rating = 0 }: { rating?: number }) {
   return (
@@ -169,15 +283,15 @@ export default function BookDetailModal({ book, onClose }: Props) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [returnDate, setReturnDate] = useState('');
+  const [returnTime, setReturnTime] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [quantity, setQuantity] = useState(1);
-  const [durationType, setDurationType] = useState<'hours' | 'days'>('days');
-  const [borrowHours, setBorrowHours] = useState(2);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
 
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const today = new Date();
+  const minDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
   const maxDate = new Date();
   maxDate.setDate(maxDate.getDate() + 30);
@@ -185,8 +299,8 @@ export default function BookDetailModal({ book, onClose }: Props) {
   const { mutate: borrowBook, isPending } = useMutation({
     mutationFn: () => studentApi.borrowBook(book.id, {
       return_date: returnDate,
+      return_time: returnTime || '23:59',
       quantity,
-      ...(durationType === 'hours' ? { borrow_duration_hours: borrowHours } : {}),
     }),
     onSuccess: (res) => {
       setSuccess(res.data.message);
@@ -211,6 +325,15 @@ export default function BookDetailModal({ book, onClose }: Props) {
     if (!dateStr) return '';
     const d = new Date(dateStr + 'T00:00:00');
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const formatDisplayTime = (timeStr: string) => {
+    if (!timeStr) return '';
+    const [h, m] = timeStr.split(':');
+    const d = new Date();
+    d.setHours(parseInt(h, 10));
+    d.setMinutes(parseInt(m, 10));
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
   return (
@@ -298,6 +421,33 @@ export default function BookDetailModal({ book, onClose }: Props) {
             <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">{book.description}</p>
           )}
 
+          {/* Book Details */}
+          <div className="pt-4 border-t border-gray-100">
+            <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">Book Details</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-500 font-medium">Book ID</span>
+                <span className="text-gray-900 font-semibold">{book.book_id}</span>
+              </div>
+              {book.isbn && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500 font-medium">ISBN</span>
+                  <span className="text-gray-900 font-semibold">{book.isbn}</span>
+                </div>
+              )}
+              {book.publisher && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500 font-medium">Publisher</span>
+                  <span className="text-gray-900 font-semibold">{book.publisher.name}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-500 font-medium">Category</span>
+                <span className="text-gray-900 font-semibold">{book.category.name}</span>
+              </div>
+            </div>
+          </div>
+
           {/* Alerts */}
           {success && (
             <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-2xl">
@@ -343,53 +493,15 @@ export default function BookDetailModal({ book, onClose }: Props) {
                   <span className="text-xs text-gray-400 ml-1">of {book.available_copies} available</span>
                 </div>
               </div>
-              {/* Duration type toggle */}
+              {/* Return Date & Time */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Borrow Period</label>
-                <div className="flex gap-2 mb-3">
-                  <button
-                    type="button"
-                    onClick={() => setDurationType('hours')}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${durationType === 'hours' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                  >
-                    Hours
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDurationType('days')}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${durationType === 'days' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                  >
-                    Days
-                  </button>
-                </div>
-                {durationType === 'hours' && (
-                  <div className="flex items-center gap-2 mb-3">
-                    <button
-                      type="button"
-                      onClick={() => setBorrowHours(h => Math.max(1, h - 1))}
-                      disabled={borrowHours <= 1}
-                      className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 transition"
-                    >
-                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
-                    </button>
-                    <span className="flex-1 text-center text-lg font-bold text-gray-900">{borrowHours} hour{borrowHours > 1 ? 's' : ''}</span>
-                    <button
-                      type="button"
-                      onClick={() => setBorrowHours(h => Math.min(24, h + 1))}
-                      disabled={borrowHours >= 24}
-                      className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 transition"
-                    >
-                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                    </button>
-                  </div>
-                )}
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Return Date</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Return Date & Time</label>
 
-                {/* Date picker trigger — looks like a calendar button */}
+                {/* Date picker trigger */}
                 <button
                   type="button"
                   onClick={() => setShowDatePicker(true)}
-                  className="w-full flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 text-sm px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition hover:border-gray-300"
+                  className="w-full flex items-center gap-3 rounded-2xl border text-sm px-4 py-3 outline-none transition bg-gray-50 border-gray-200 hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -399,17 +511,36 @@ export default function BookDetailModal({ book, onClose }: Props) {
                   </span>
                   {returnDate && (
                     <button
-                      onClick={(e) => { e.stopPropagation(); setReturnDate(''); }}
+                      onClick={(e) => { e.stopPropagation(); setReturnDate(''); setReturnTime(''); }}
                       className="ml-auto w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition"
                     >
                       <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                   )}
                 </button>
+
+                {/* Time picker trigger */}
+                {returnDate && (
+                  <div className="mt-2">
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Return Time</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowTimePicker(true)}
+                      className="w-full flex items-center gap-3 rounded-2xl border text-sm px-4 py-3 outline-none transition bg-gray-50 border-gray-200 hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className={returnTime ? 'text-gray-900 font-medium' : 'text-gray-400'}>
+                        {returnTime ? formatDisplayTime(returnTime) : 'Select a return time'}
+                      </span>
+                    </button>
+                  </div>
+                )}
               </div>
               <button
                 onClick={() => borrowBook()}
-                disabled={!returnDate || (durationType === 'hours' && !borrowHours) || isPending}
+                disabled={!returnDate || !returnTime || isPending}
                 className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition-all active:scale-95"
               >
                 {isPending ? 'Submitting…' : 'Request to Borrow'}
@@ -429,10 +560,21 @@ export default function BookDetailModal({ book, onClose }: Props) {
       {showDatePicker && (
         <DatePickerModal
           value={returnDate}
-          minDate={tomorrow}
+          minDate={minDate}
           maxDate={maxDate}
-          onSelect={setReturnDate}
+          onSelect={(date) => {
+            setReturnDate(date);
+            if (!returnTime) setReturnTime('17:00'); // Default to 5 PM
+          }}
           onClose={() => setShowDatePicker(false)}
+        />
+      )}
+
+      {showTimePicker && (
+        <TimePickerModal
+          value={returnTime}
+          onSelect={setReturnTime}
+          onClose={() => setShowTimePicker(false)}
         />
       )}
     </div>

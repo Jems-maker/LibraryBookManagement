@@ -27,7 +27,7 @@ class PublisherApiController extends Controller
     }
     public function update(Request $request, Publisher $publisher): JsonResponse {
         $d = $request->validate(['name'=>'sometimes|string|unique:publishers,name,'.$publisher->id,'address'=>'nullable|string']);
-        $publisher->update($d); return response()->json($publisher);
+        $publisher->update($d); return response()->json($publisher->fresh());
     }
     public function destroy(Publisher $publisher): JsonResponse { $publisher->delete(); return response()->json(['message'=>'Deleted.']); }
 }

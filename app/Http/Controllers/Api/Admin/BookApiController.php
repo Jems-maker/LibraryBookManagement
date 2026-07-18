@@ -48,13 +48,13 @@ class BookApiController extends Controller
         $data = $request->validate([
             'title'            => 'required|string|max:255',
             'description'      => 'nullable|string',
-            'isbn'             => 'nullable|string',
             'author_id'        => 'required|exists:authors,id',
             'category_id'      => 'required|exists:categories,id',
             'publisher_id'     => 'nullable|exists:publishers,id',
             'total_copies'     => 'required|integer|min:1',
             'status'           => 'required|in:Available,Unavailable',
             'cover_image'      => 'nullable|image|max:2048',
+            'year_of_book'     => 'nullable|integer',
         ]);
 
         // Auto-set available_copies to total_copies on creation
@@ -85,7 +85,6 @@ class BookApiController extends Controller
         $data = $request->validate([
             'title'            => 'sometimes|string|max:255',
             'description'      => 'nullable|string',
-            'isbn'             => 'nullable|string',
             'author_id'        => 'sometimes|exists:authors,id',
             'category_id'      => 'sometimes|exists:categories,id',
             'publisher_id'     => 'nullable|exists:publishers,id',
@@ -93,6 +92,7 @@ class BookApiController extends Controller
             'available_copies' => 'sometimes|integer|min:0',
             'status'           => 'sometimes|in:Available,Unavailable',
             'cover_image'      => 'nullable|image|max:2048',
+            'year_of_book'     => 'nullable|integer',
         ]);
 
         if ($request->hasFile('cover_image')) {

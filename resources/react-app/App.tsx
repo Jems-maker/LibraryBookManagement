@@ -5,10 +5,10 @@ import ProtectedRoute from './components/ProtectedRoute';
 import StudentLayout from './layouts/StudentLayout';
 import Login from './pages/auth/Login';
 import AdminLogin from './pages/auth/AdminLogin';
-import Register from './pages/auth/Register';
 import Dashboard from './pages/student/Dashboard';
 import Profile from './pages/student/Profile';
 import BorrowedBooks from './pages/student/BorrowedBooks';
+import StudentRequests from './pages/student/Requests';
 import History from './pages/student/History';
 
 import AdminLayout from './layouts/AdminLayout';
@@ -36,13 +36,13 @@ export default function App() {
       <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Navigate to="/login" />} />
       <Route path="/login" element={<Login />} />
       <Route path="/admin/login" element={<AdminLogin />} />
-      <Route path="/register" element={<Register />} />
 
       {/* Student Routes */}
       <Route element={<ProtectedRoute><StudentLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/borrowed-books" element={<BorrowedBooks />} />
+        <Route path="/requests" element={<StudentRequests />} />
         <Route path="/history" element={<History />} />
       </Route>
 

@@ -1,0 +1,61 @@
+# Git
+.git
+.gitignore
+
+# Node.js
+node_modules
+npm-debug.log
+
+# PHP
+vendor
+composer.lock
+
+# IDE
+.vscode
+.idea
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose.yml
+docker/
+
+# Documentation
+README.md
+CHANGELOG.md
+docs/
+
+# Tests
+tests/
+phpunit.xml
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Build artifacts
+/public/build
+/public/hot
+/public/storage
+
+# Storage
+storage/logs/*
+!storage/logs/.gitkeep
+storage/framework/cache/*
+!storage/framework/cache/.gitkeep
+storage/framework/sessions/*
+!storage/framework/sessions/.gitkeep
+storage/framework/views/*
+!storage/framework/views/.gitkeep
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo

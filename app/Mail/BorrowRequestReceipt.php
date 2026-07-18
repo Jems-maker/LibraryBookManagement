@@ -18,13 +18,13 @@ class BorrowRequestReceipt extends Mailable
     public BorrowRequest $borrowRequest;
     public BorrowRecord $record;
     public string $qrCodeSvg;
-    public \App\Models\Setting $setting;
+    public float $penaltyAmount;
 
     public function __construct(BorrowRecord $record)
     {
         $this->record = $record->load(['book.author', 'book.category', 'user', 'borrowRequest']);
         $this->borrowRequest = $this->record->borrowRequest;
-        $this->setting = \App\Models\Setting::firstOrNew([]);
+        $this->penaltyAmount = (float) \App\Models\Setting::getValue('late_penalty_per_day', 5);
 
         // QR code for scanning at the counter
         $qrContent = config('app.url') . "/admin/scanner?borrow_id=" . $record->borrow_id;

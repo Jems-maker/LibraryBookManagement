@@ -16,6 +16,7 @@ class BookDueReminder extends Mailable
 
     public $record;
     public $type;
+    public float $penaltyAmount;
 
     /**
      * Create a new message instance.
@@ -24,16 +25,19 @@ class BookDueReminder extends Mailable
     {
         $this->record = $record;
         $this->type = $type; // 'due_tomorrow' or 'overdue'
+        $this->penaltyAmount = (float) \App\Models\Setting::getValue('late_penalty_per_day', 5);
     }
 
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
-        $subject = $this->type === 'overdue' 
-            ? 'URGENT: Your Library Book is Overdue' 
-            : 'Reminder: Your Library Book is Due Tomorrow';
+        $subject = 'Notice';
+        if ($this->type === 'overdue') {
+            $subject = 'URGENT: Your Library Book is Overdue';
+        } elseif ($this->type === 'due_now') {
+            $subject = 'ACTION REQUIRED: Your Library Book is Due Now';
+        } elseif ($this->type === 'due_tomorrow') {
+            $subject = 'Reminder: Your Library Book is Due Tomorrow';
+        }
             
         return new Envelope(
             subject: $subject,

@@ -24,7 +24,7 @@ class StudentApiController extends Controller
             );
         }
 
-        $students = $query->orderBy('name')->paginate(8)->withQueryString();
+        $students = $query->withCount('borrowRecords as total_borrows')->orderBy('name')->paginate(8)->withQueryString();
 
         return response()->json($students);
     }

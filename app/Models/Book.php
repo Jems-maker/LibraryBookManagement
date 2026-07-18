@@ -17,6 +17,7 @@ class Book extends Model
         'total_copies',
         'available_copies',
         'status',
+        'year_of_book',
     ];
 
     public function author()

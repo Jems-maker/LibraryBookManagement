@@ -46,6 +46,9 @@
                                         <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 600;">{{ $borrowRequest->book->title }}</h3>
                                         <p style="margin: 0 0 2px; font-size: 14px; color: #4b5563;">{{ $borrowRequest->book->author->name }}</p>
                                         <p style="margin: 0; font-size: 13px; color: #6b7280;">Category: {{ $borrowRequest->book->category->name }}</p>
+                                        @if($borrowRequest->book->year_of_book)
+                                        <p style="margin: 2px 0 0; font-size: 13px; color: #6b7280;">Year: {{ $borrowRequest->book->year_of_book }}</p>
+                                        @endif
                                     </td>
                                 </tr>
                             </table>
@@ -66,8 +69,14 @@
                                     <td style="padding: 8px 0; font-weight: 500;">{{ $borrowRequest->user->student_id }}</td>
                                 </tr>
                                 <tr>
+                                    <td style="padding: 8px 0; color: #6b7280;">Course</td>
+                                    <td style="padding: 8px 0; font-weight: 500;">{{ $borrowRequest->user->profile?->course ?? $borrowRequest->user->studentProfile?->course ?? 'N/A' }}</td>
+                                </tr>
+                                <tr>
                                     <td style="padding: 8px 0; color: #6b7280;">Return Date</td>
-                                    <td style="padding: 8px 0; font-weight: 600; color: #111827;">{{ $borrowRequest->return_date ? $borrowRequest->return_date->format('F j, Y') : 'N/A' }}</td>
+                                    <td style="padding: 8px 0; font-weight: 600; color: #111827;">
+                                        {{ $borrowRequest->return_date ? $borrowRequest->return_date->format('F j, Y — h:i A') : 'N/A' }}
+                                    </td>
                                 </tr>
                             </table>
                         </td>
@@ -78,7 +87,7 @@
                         <td style="padding: 24px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
                             <p style="margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #374151;">Library Policy</p>
                             <p style="margin: 0; font-size: 12px; color: #6b7280; line-height: 1.6;">
-                                Books must be returned by the selected date. A penalty of &#8369;{{ number_format($setting->penalty_amount ?? 5, 2) }}/{{ $setting->penalty_period ?? 'day' }} applies to overdue returns. Lost or damaged books must be replaced or paid in full.
+                                Books must be returned by the selected date. A penalty of &#8369;{{ number_format($penaltyAmount, 2) }} per 24 hours overdue applies to late returns. Lost or damaged books must be replaced or paid in full.
                             </p>
                         </td>
                     </tr>

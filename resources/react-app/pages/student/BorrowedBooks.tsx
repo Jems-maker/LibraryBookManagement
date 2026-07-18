@@ -36,6 +36,7 @@ function BorrowCard({ record }: { record: BorrowRecord }) {
             <div className="min-w-0">
               <p className="font-bold text-gray-900 truncate">{record.book?.title ?? 'Unknown Book'}</p>
               <p className="text-sm text-gray-400 mt-0.5">{record.book?.author?.name ?? '—'}</p>
+              {record.book?.year_of_book && <p className="text-[10px] text-gray-400 font-mono">Year: {record.book.year_of_book}</p>}
             </div>
             <StatusBadge status={record.status} isOverdue={isOverdue} />
           </div>

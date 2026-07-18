@@ -20,11 +20,13 @@ class DashboardApiController extends Controller
         $period = $request->get('period', 'month');
         $cacheKey = "admin_stats_{$period}";
 
-        $data = Cache::remember($cacheKey, 300, function () use ($period) {
+        $overdueThreshold = Carbon::now()->subMinutes(20);
+
+        $data = Cache::remember($cacheKey, 300, function () use ($period, $overdueThreshold) {
             $totalStudents   = User::where('role', 'student')->count();
             $totalBooks      = Book::sum('total_copies');
-            $borrowedBooks   = Book::sum('total_copies') - Book::sum('available_copies');
             $pendingRequests = BorrowRequest::where('status', 'Pending')->count();
+            $overdueBooks    = BorrowRecord::whereIn('status', ['Borrowed', 'Overdue'])->where('due_date', '<', $overdueThreshold)->count();
 
             $labels    = collect();
             $borrowArr = collect();
@@ -75,10 +77,13 @@ class DashboardApiController extends Controller
                     'total' => $row->total,
                 ]);
 
+            $borrowedBooks = $borrowArr->sum();
+
             return [
                 'totalStudents'   => $totalStudents,
                 'totalBooks'      => $totalBooks,
                 'borrowedBooks'   => $borrowedBooks,
+                'overdueBooks'    => $overdueBooks,
                 'pendingRequests' => $pendingRequests,
                 'labels'          => $labels->values()->toArray(),
                 'borrowArr'       => $borrowArr->values()->toArray(),
@@ -92,9 +97,14 @@ class DashboardApiController extends Controller
 
     public function notifications(): JsonResponse
     {
+        $overdueThreshold = Carbon::now()->subMinutes(20);
         $pendingRequests = BorrowRequest::where('status', 'Pending')->count();
+        $overdueBooks = BorrowRecord::whereIn('status', ['Borrowed', 'Overdue'])
+            ->where('due_date', '<', $overdueThreshold)
+            ->count();
         return response()->json([
-            'pendingRequests' => $pendingRequests
+            'pendingRequests' => $pendingRequests,
+            'overdueBooks' => $overdueBooks,
         ]);
     }
 }

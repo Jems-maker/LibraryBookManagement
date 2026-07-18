@@ -27,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/borrow/{book}', [\App\Http\Controllers\Api\StudentApiController::class, 'borrow']);
         Route::get('/borrowed-books', [\App\Http\Controllers\Api\StudentApiController::class, 'activeBorrows']);
         Route::get('/history', [\App\Http\Controllers\Api\StudentApiController::class, 'history']);
+        Route::get('/requests', [\App\Http\Controllers\Api\StudentApiController::class, 'requests']);
     });
 
     // ── Admin ─────────────────────────────────────────────────────────────────
