@@ -182,6 +182,7 @@ function ApproveModal({ req, onConfirm, onCancel, isLoading }: any) {
               <p className="text-xs text-gray-400 uppercase font-semibold">Book</p>
               <p className="font-bold text-gray-900">{req.book?.title}</p>
               <p className="text-xs text-gray-500 mt-0.5">{req.book?.author?.name || 'Unknown Author'} &bull; {req.book?.publisher?.name || 'Unknown Publisher'}</p>
+              {req.book?.year_of_book && <p className="text-xs text-gray-500">Year: {req.book.year_of_book}</p>}
               <p className="text-xs text-gray-500 font-mono mt-1">{req.book?.book_id}</p>
             </div>
             <div className="border-t border-gray-200 pt-3">

@@ -47,7 +47,9 @@ function BookCard({ book, onClick }: { book: Book; onClick: () => void }) {
           {book.category.name}
         </span>
         <h3 className="font-bold text-gray-900 text-sm leading-snug line-clamp-2 flex-1">{book.title}</h3>
-        <p className="text-xs text-gray-400 mt-1 truncate">{book.author.name}</p>
+        {book.year_of_book && <p className="text-xs text-gray-400">{book.year_of_book}</p>}
+        <p className="text-xs text-gray-400 truncate">{book.author.name}</p>
+
 
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
           <span className={`text-[10px] font-semibold flex items-center gap-1 ${isAvailable ? 'text-green-600' : 'text-red-500'}`}>

@@ -29,6 +29,9 @@
             <div class="details">
                 <p><strong>Book Title:</strong> {{ $borrowRequest->book->title }}</p>
                 <p><strong>Author:</strong> {{ $borrowRequest->book->author->name }}</p>
+                @if($borrowRequest->book->year_of_book)
+                <p><strong>Year:</strong> {{ $borrowRequest->book->year_of_book }}</p>
+                @endif
             </div>
             
             <p>This may happen if the book is no longer available, or if there is an issue with your account. If you believe this is a mistake, please contact the librarian.</p>

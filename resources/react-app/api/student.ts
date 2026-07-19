@@ -9,7 +9,7 @@ export const studentApi = {
 
   // Borrow requests
   requests: () => api.get<BorrowRequest[]>('/api/student/requests'),
-  borrowBook: (bookId: number, data: { return_date: string; quantity?: number }) =>
+  borrowBook: (bookId: number, data: { return_date: string; return_time?: string; quantity?: number }) =>
     api.post<{ message: string }>(`/api/student/borrow/${bookId}`, data),
 
   // Borrowed books

@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('books', function (Blueprint $table) {
-            $table->integer('year_of_book')->nullable()->after('isbn');
+            $table->integer('year_of_book')->nullable()->after('book_id');
         });
     }
 

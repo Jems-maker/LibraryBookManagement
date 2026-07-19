@@ -36,6 +36,7 @@ function BorrowRow({ record }: { record: BorrowRecord }) {
       <div className="flex-1 min-w-0">
         <p className="font-bold text-gray-900 text-sm truncate">{record.book?.title ?? 'Unknown'}</p>
         <p className="text-xs text-gray-400 truncate">{record.book?.author?.name ?? '—'}</p>
+        {record.book?.year_of_book && <p className="text-[10px] text-gray-400">{record.book.year_of_book}</p>}
         <div className="flex items-center flex-wrap gap-1.5 mt-1.5">
           <StatusBadge status={record.status} isOverdue={isOverdue} />
           {borrowDate && (

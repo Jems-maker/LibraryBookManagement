@@ -93,6 +93,7 @@ function BorrowDetailModal({ record, onClose }: { record: any; onClose: () => vo
             <div className="p-3 bg-gray-50 rounded-xl space-y-1">
               <p className="font-bold text-gray-900">{record.book?.title || 'N/A'}</p>
               <p className="text-xs text-gray-500">by {record.book?.author?.name || 'Unknown Author'}</p>
+              {record.book?.year_of_book && <p className="text-xs text-gray-400">{record.book.year_of_book}</p>}
               <p className="text-xs text-gray-500 font-mono">{record.book?.book_id || ''}</p>
             </div>
           </div>

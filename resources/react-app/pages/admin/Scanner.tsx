@@ -210,7 +210,7 @@ export default function Scanner() {
     const todayStr = now.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
 
     if (action === 'return') {
-      
+
       const hoursEarly = isEarlyReturn ? Math.max(0, Math.floor((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60))) : 0;
       const daysEarly = isEarlyReturn ? Math.max(0, Math.floor((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
       const minutesLate = isOverdue ? Math.max(1, Math.ceil((now.getTime() - dueDate.getTime()) / 60000)) : 0;
@@ -354,6 +354,7 @@ export default function Scanner() {
                     }`}>{record.status}</span>
                   <h3 className="font-bold text-gray-900 mt-2 text-lg leading-tight">{record.book?.title}</h3>
                   <p className="text-sm text-gray-500 mt-1">{record.book?.author?.name || 'Unknown Author'} &bull; {record.book?.publisher?.name || 'Unknown Publisher'}</p>
+                  {record.book?.year_of_book && <p className="text-xs text-gray-400 mt-1">Year: {record.book.year_of_book}</p>}
                   <p className="text-xs font-mono text-gray-400 mt-2">ID: {record.borrow_id}</p>
                 </div>
               </div>

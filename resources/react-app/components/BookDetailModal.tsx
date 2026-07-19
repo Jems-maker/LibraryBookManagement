@@ -178,7 +178,7 @@ function TimePickerModal({
     let h24 = hour;
     if (isPM && hour !== 12) h24 += 12;
     if (!isPM && hour === 12) h24 = 0;
-    
+
     const hh = String(h24).padStart(2, '0');
     const mm = String(minute).padStart(2, '0');
     onSelect(`${hh}:${mm}`);
@@ -189,7 +189,7 @@ function TimePickerModal({
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm z-10 p-6 animate-scale-up">
-        
+
         <div className="text-center mb-6">
           <h3 className="text-lg font-bold text-gray-900">Select Time</h3>
           <div className="text-3xl font-black text-blue-600 mt-2 tracking-tight">
@@ -429,16 +429,16 @@ export default function BookDetailModal({ book, onClose }: Props) {
                 <span className="text-gray-500 font-medium">Book ID</span>
                 <span className="text-gray-900 font-semibold">{book.book_id}</span>
               </div>
-              {book.isbn && (
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500 font-medium">ISBN</span>
-                  <span className="text-gray-900 font-semibold">{book.isbn}</span>
-                </div>
-              )}
               {book.publisher && (
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-500 font-medium">Publisher</span>
                   <span className="text-gray-900 font-semibold">{book.publisher.name}</span>
+                </div>
+              )}
+              {book.year_of_book && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500 font-medium">Year</span>
+                  <span className="text-gray-900 font-semibold">{book.year_of_book}</span>
                 </div>
               )}
               <div className="flex justify-between items-center text-sm">

@@ -45,7 +45,6 @@ export interface Book {
   book_id: string;
   title: string;
   description: string | null;
-  isbn: string | null;
   total_copies: number;
   available_copies: number;
   status: 'Available' | 'Unavailable';

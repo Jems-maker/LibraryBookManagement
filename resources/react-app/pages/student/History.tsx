@@ -27,6 +27,7 @@ export default function History() {
                 <div key={record.id} className="p-5 flex items-center justify-between gap-4">
                   <div>
                     <p className="font-bold text-gray-900 truncate">{record.book?.title}</p>
+                    {record.book?.year_of_book && <p className="text-[10px] text-gray-400">{record.book.year_of_book}</p>}
                     <div className="flex gap-4 mt-1">
                       <span className="text-xs text-gray-500">Borrowed: {record.borrow_date ? format(parseISO(record.borrow_date), 'MMM d, yyyy') : '—'}</span>
                       <span className="text-xs text-gray-500">Returned: {record.return_date ? format(parseISO(record.return_date), 'MMM d, yyyy') : '—'}</span>
