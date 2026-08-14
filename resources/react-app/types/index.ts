@@ -17,6 +17,7 @@ export interface StudentProfile {
   id: number;
   user_id: number;
   course: string | null;
+  course_description?: string | null;
   year_level: string | null;
   gender: string | null;
   student_id: string | null;

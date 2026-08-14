@@ -11,7 +11,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Use sync queue locally so queued emails fire immediately without a worker
+        if ($this->app->environment('local')) {
+            config(['queue.default' => 'sync']);
+        }
     }
 
     /**

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin';
 import type { BorrowRequest, PaginatedResponse } from '@/types';
 import { format, parseISO } from 'date-fns';
+import { useToast } from '@/components/Toast';
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -21,6 +22,7 @@ export default function BorrowRequests() {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState('Pending');
   const [page, setPage] = useState(1);
+  const { showToast } = useToast();
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-borrow-requests', filter, page],
@@ -29,12 +31,24 @@ export default function BorrowRequests() {
 
   const approveMutation = useMutation({
     mutationFn: (id: number) => adminApi.borrowRequests.approve(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-borrow-requests'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-borrow-requests'] });
+      showToast('Borrow request approved successfully.', 'success');
+    },
+    onError: (err: any) => {
+      showToast(err.response?.data?.message || 'Failed to approve request.', 'error');
+    }
   });
 
   const rejectMutation = useMutation({
     mutationFn: (id: number) => adminApi.borrowRequests.reject(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-borrow-requests'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-borrow-requests'] });
+      showToast('Borrow request rejected.', 'info');
+    },
+    onError: (err: any) => {
+      showToast(err.response?.data?.message || 'Failed to reject request.', 'error');
+    }
   });
 
   const filters = ['Pending', 'Approved', 'Rejected'];
@@ -92,7 +106,7 @@ export default function BorrowRequests() {
                   <div className="flex flex-wrap gap-4 mt-3 text-xs text-gray-500">
                     <span className="font-semibold">Qty: {req.quantity}</span>
                     <span className="font-semibold">Duration: {req.borrow_duration_days} days</span>
-                    <span className="font-semibold">Return by: {req.return_date ? format(parseISO(req.return_date), 'MMM d, yyyy') : '—'}</span>
+                    <span className="font-semibold">Return by: {req.return_date ? format(parseISO(req.return_date), 'MMM d, yyyy h:mm a') : '—'}</span>
                     <span className="font-semibold">Requested: {req.created_at ? format(parseISO(req.created_at), 'MMM d, h:mm a') : '—'}</span>
                   </div>
                 </div>

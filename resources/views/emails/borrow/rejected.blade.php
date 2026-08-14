@@ -13,13 +13,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 12px;"><tr>
-            <td style="width: 48px; height: 48px; background: rgba(255,255,255,0.15); border-radius: 14px; text-align: center; vertical-align: middle;">
-                <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto;">
-                    <tr><td style="width: 20px; height: 3px; background: #ffffff; border-radius: 2px; font-size: 1px; line-height: 1px;">&nbsp;</td></tr>
-                </table>
-            </td>
-            </tr></table>
+            <div style="width: 48px; height: 48px; line-height: 48px; background: rgba(255,255,255,0.15); border-radius: 14px; text-align: center; margin: 0 auto 12px; font-size: 24px;">❌</div>
             <h2 style="margin: 0;">Borrow Request Rejected</h2>
         </div>
         <div class="content">
@@ -27,8 +21,18 @@
             <p>We are sorry to inform you that your request to borrow the following book has been rejected.</p>
             
             <div class="details">
+                @if($borrowRequest->book->cover_image)
+                <div style="text-align: center; margin-bottom: 16px;">
+                    @if(Str::startsWith($borrowRequest->book->cover_image, 'http'))
+                        <img src="{{ $borrowRequest->book->cover_image }}" alt="{{ $borrowRequest->book->title }}" width="120" style="border-radius: 6px; border: 1px solid #e5e7eb; display: inline-block;">
+                    @else
+                        <img src="{{ $message->embed(storage_path('app/public/' . $borrowRequest->book->cover_image)) }}" alt="{{ $borrowRequest->book->title }}" width="120" style="border-radius: 6px; border: 1px solid #e5e7eb; display: inline-block;">
+                    @endif
+                </div>
+                @endif
                 <p><strong>Book Title:</strong> {{ $borrowRequest->book->title }}</p>
                 <p><strong>Author:</strong> {{ $borrowRequest->book->author->name }}</p>
+                <p><strong>Publisher:</strong> {{ $borrowRequest->book->publisher->name ?? 'N/A' }}</p>
                 @if($borrowRequest->book->year_of_book)
                 <p><strong>Year:</strong> {{ $borrowRequest->book->year_of_book }}</p>
                 @endif

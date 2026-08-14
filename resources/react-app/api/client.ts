@@ -5,7 +5,6 @@ const api = axios.create({
   withCredentials: true,
   withXSRFToken: true,
   headers: {
-    'Content-Type': 'application/json',
     Accept: 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
   },

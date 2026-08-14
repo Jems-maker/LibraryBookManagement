@@ -2,103 +2,8 @@ import React, { useLayoutEffect, useState, useRef } from 'react';
 import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin';
-
-interface ConfirmModalProps {
-  isOpen: boolean;
-  title: string;
-  message: string;
-  details?: { label: string; value: string; highlight?: boolean }[];
-  confirmLabel: string;
-  confirmColor: 'green' | 'blue';
-  isLoading: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-function ConfirmModal({ isOpen, title, message, details, confirmLabel, confirmColor, isLoading, onConfirm, onCancel }: ConfirmModalProps) {
-  if (!isOpen) return null;
-
-  const colorMap = {
-    green: { bg: 'bg-green-600', hover: 'hover:bg-green-700', ring: 'ring-green-200', iconBg: 'bg-green-100', iconText: 'text-green-600' },
-    blue: { bg: 'bg-blue-600', hover: 'hover:bg-blue-700', ring: 'ring-blue-200', iconBg: 'bg-blue-100', iconText: 'text-blue-600' },
-  };
-  const c = colorMap[confirmColor];
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onCancel}>
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-
-      {/* Modal */}
-      <div
-        className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-[modalSlideUp_0.3s_ease-out]"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="p-6 pb-4 text-center">
-          <div className={`w-14 h-14 ${c.iconBg} rounded-2xl flex items-center justify-center mx-auto mb-4`}>
-            {confirmColor === 'green' ? (
-              <svg className={`w-7 h-7 ${c.iconText}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            ) : (
-              <svg className={`w-7 h-7 ${c.iconText}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            )}
-          </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
-          <p className="text-sm text-gray-500 leading-relaxed">{message}</p>
-        </div>
-
-        {/* Details */}
-        {details && details.length > 0 && (
-          <div className="mx-6 mb-4 bg-gray-50 rounded-2xl p-4 space-y-3">
-            {details.map((d, i) => (
-              <div key={i} className="flex justify-between items-center text-sm">
-                <span className="text-gray-500 font-medium">{d.label}</span>
-                <span className={`font-bold ${d.highlight ? 'text-red-600' : 'text-gray-900'}`}>{d.value}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="p-6 pt-2 flex gap-3">
-          <button
-            onClick={onCancel}
-            disabled={isLoading}
-            className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isLoading}
-            className={`flex-1 py-3 ${c.bg} ${c.hover} text-white font-bold rounded-xl transition ring-4 ${c.ring} disabled:opacity-70`}
-          >
-            {isLoading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                </svg>
-                Processing...
-              </span>
-            ) : confirmLabel}
-          </button>
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes modalSlideUp {
-          from { opacity: 0; transform: translateY(20px) scale(0.95); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-      `}</style>
-    </div>
-  );
-}
+import ConfirmModal from '@/components/ConfirmModal';
+import { useToast } from '@/components/Toast';
 
 export default function Scanner() {
   const queryClient = useQueryClient();
@@ -127,16 +32,33 @@ export default function Scanner() {
   });
 
   const lastScanned = useRef<string | null>(null);
+  const qrReaderWrapperRef = useRef<HTMLDivElement>(null);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
   // useLayoutEffect ensures cleanup runs before React unmounts the DOM
   useLayoutEffect(() => {
+    const wrapper = qrReaderWrapperRef.current;
+    if (!wrapper) return;
+
+    let isMounted = true;
+
+    // Create the container div imperatively — the library owns this element,
+    // not React. React only owns the wrapper div.
+    const container = document.createElement('div');
+    container.id = 'qr-reader';
+    container.className = 'w-full';
+    wrapper.appendChild(container);
+
     const scanner = new Html5QrcodeScanner(
       "qr-reader",
       { fps: 10, qrbox: { width: 250, height: 250 }, supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA] },
       /* verbose= */ false
     );
+    scannerRef.current = scanner;
 
     scanner.render((text) => {
+      if (!isMounted) return;
+
       if (lastScanned.current !== text) {
         lastScanned.current = text;
 
@@ -153,10 +75,28 @@ export default function Scanner() {
     }, () => { });
 
     return () => {
+      isMounted = false;
+      scannerRef.current = null;
+
       try {
-        scanner.clear().catch(() => { });
+        scanner.clear()
+          .then(() => {
+            // Only remove the container AFTER the library has fully cleaned up
+            if (container.parentNode) {
+              container.parentNode.removeChild(container);
+            }
+          })
+          .catch(() => {
+            // Even if the library fails to clear, remove the container to avoid leaks
+            if (container.parentNode) {
+              container.parentNode.removeChild(container);
+            }
+          });
       } catch (e) {
-        // Ignore DOM lifecycle errors
+        // Synchronous failure — remove the container immediately
+        if (container.parentNode) {
+          container.parentNode.removeChild(container);
+        }
       }
     };
   }, []);
@@ -183,12 +123,16 @@ export default function Scanner() {
       setSuccessMsg(data.message);
       setScanResult(null);
       lastScanned.current = null;
+      showToast(data.message, 'success');
     },
     onError: (err: any) => {
       setConfirmModal(prev => ({ ...prev, isOpen: false }));
       setErrorMsg(err.response?.data?.message || 'Failed to process.');
+      showToast(err.response?.data?.message || 'Failed to process.', 'error');
     }
   });
+
+  const { showToast } = useToast();
 
   const resetScanner = () => {
     setScanResult(null);
@@ -203,8 +147,10 @@ export default function Scanner() {
 
     const now = new Date();
     const dueDate = new Date(record.due_date);
-    const isOverdue = now > dueDate && record.status !== 'Returned';
+    const gracePeriodMs = 5 * 60 * 1000;
+    const isOverdue = now.getTime() > (dueDate.getTime() + gracePeriodMs) && record.status !== 'Returned';
     const isEarlyReturn = now < dueDate;
+    const isDueDateReturn = !isEarlyReturn && !isOverdue;
 
     const dueDateStr = dueDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
     const todayStr = now.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
@@ -220,15 +166,19 @@ export default function Scanner() {
       const penaltyAmount = periodsLate * penaltySettingAmount;
 
       let message = '';
+      let returnStatus = { label: 'On Time', color: 'bg-green-100 text-green-700' };
+
       if (isOverdue) {
         message = `This book is overdue. A penalty of ₱${penaltyAmount.toFixed(2)} will be applied for ${periodsLate} period(s) late.`;
+        returnStatus = { label: 'Overdue', color: 'bg-red-100 text-red-700' };
       } else if (isEarlyReturn) {
-        const msEarly = dueDate.getTime() - now.getTime();
-        const hoursEarly = Math.floor(msEarly / (1000 * 60 * 60));
-        const daysEarly = Math.floor(msEarly / (1000 * 60 * 60 * 24));
         message = daysEarly >= 1
           ? `This book is being returned ${daysEarly} day(s) early. Are you sure you want to process this early return?`
           : `This book is being returned ${hoursEarly} hour(s) early. Are you sure you want to process this early return?`;
+        returnStatus = { label: 'Early Return', color: 'bg-blue-100 text-blue-700' };
+      } else if (isDueDateReturn) {
+        message = 'This book is being returned on its due date. The student returned it within the grace period. Proceed with the return?';
+        returnStatus = { label: 'Due Date', color: 'bg-amber-100 text-amber-700' };
       } else {
         message = 'This book is being returned on time. Proceed with the return?';
       }
@@ -236,6 +186,7 @@ export default function Scanner() {
       const details: { label: string; value: string; highlight?: boolean }[] = [
         { label: 'Book', value: record.book?.title || 'Unknown' },
         { label: 'Student', value: record.user?.name || 'Unknown' },
+        { label: 'Status', value: returnStatus.label, highlight: isOverdue },
         { label: 'Due Date', value: dueDateStr, highlight: isOverdue },
         { label: 'Return Date', value: todayStr },
       ];
@@ -245,20 +196,35 @@ export default function Scanner() {
       }
 
       if (isEarlyReturn) {
-        const msEarly = dueDate.getTime() - now.getTime();
-        const hoursEarly = Math.floor(msEarly / (1000 * 60 * 60));
-        const daysEarly = Math.floor(msEarly / (1000 * 60 * 60 * 24));
         details.push({ label: 'Time Early', value: daysEarly >= 1 ? `${daysEarly} day(s)` : `${hoursEarly} hour(s)` });
+      }
+
+      let title = 'Confirm Return';
+      let confirmLabel = 'Confirm Return';
+      let confirmColor: 'green' | 'blue' = 'green';
+
+      if (isOverdue) {
+        title = '⚠️ Overdue Return';
+        confirmLabel = 'Return & Apply Penalty';
+        confirmColor = 'green';
+      } else if (isEarlyReturn) {
+        title = 'Early Return';
+        confirmLabel = 'Confirm Return';
+        confirmColor = 'blue';
+      } else if (isDueDateReturn) {
+        title = '📅 Due Date Return';
+        confirmLabel = 'Confirm Return';
+        confirmColor = 'blue';
       }
 
       setConfirmModal({
         isOpen: true,
         action: 'return',
-        title: isOverdue ? '⚠️ Overdue Return' : isEarlyReturn ? 'Early Return' : 'Confirm Return',
+        title,
         message,
         details,
-        confirmLabel: isOverdue ? 'Return & Apply Penalty' : 'Confirm Return',
-        confirmColor: 'green',
+        confirmLabel,
+        confirmColor,
       });
     } else if (action === 'claim') {
       setConfirmModal({
@@ -268,7 +234,12 @@ export default function Scanner() {
         message: `Confirm that the student is picking up this book?`,
         details: [
           { label: 'Book', value: record.book?.title || 'Unknown' },
+          { label: 'Author', value: record.book?.author?.name || 'Unknown' },
+          { label: 'Publisher', value: record.book?.publisher?.name || 'Unknown' },
+          { label: 'Year', value: record.book?.year_of_book ? String(record.book.year_of_book) : '—' },
           { label: 'Student', value: record.user?.name || 'Unknown' },
+          { label: 'Student ID', value: record.user?.student_id || '—' },
+          { label: 'Course', value: record.user?.profile?.course_description || record.user?.profile?.course || record.user?.student_profile?.course || record.user?.studentProfile?.course || '—' },
           { label: 'Due Date', value: dueDateStr },
         ],
         confirmLabel: 'Confirm Claim',
@@ -282,6 +253,18 @@ export default function Scanner() {
   };
 
   const record = lookupData?.record;
+  const isExpired = record?.status === 'Expired';
+
+  // Show expired feedback modal when an expired record is scanned
+  const [expiredModalOpen, setExpiredModalOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (isExpired && scanResult) {
+      setExpiredModalOpen(true);
+    } else {
+      setExpiredModalOpen(false);
+    }
+  }, [isExpired, scanResult]);
 
   return (
     <div className="max-w-8xl mx-auto space-y-6">
@@ -312,9 +295,7 @@ export default function Scanner() {
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
             <h2 className="text-lg font-bold text-gray-900 mb-4">Scan QR Code</h2>
-            <div className="rounded-2xl overflow-hidden border-2 border-dashed border-gray-200">
-              <div id="qr-reader" className="w-full"></div>
-            </div>
+            <div ref={qrReaderWrapperRef} className="rounded-2xl overflow-hidden border-2 border-dashed border-gray-200"></div>
           </div>
 
           <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
@@ -407,14 +388,39 @@ export default function Scanner() {
         </div>
       </div>
 
+      {/* Expired Record Feedback Modal */}
+      <ConfirmModal
+        isOpen={expiredModalOpen}
+        title="⚠️ Receipt Expired"
+        message="This borrow receipt has expired because the student did not claim the book within the allotted time (5 minutes). The reservation has been automatically cancelled and the book is now available for others."
+        confirmText="Got it"
+        cancelText=""
+        variant="warning"
+        details={record && expiredModalOpen ? [
+          { label: 'Book', value: record.book?.title || 'Unknown' },
+          { label: 'Student', value: record.user?.name || 'Unknown' },
+          { label: 'Student ID', value: record.user?.student_id || '—' },
+          { label: 'Status', value: 'Expired', highlight: true },
+          { label: 'Original Due Date', value: new Date(record.due_date).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) },
+        ] : []}
+        onConfirm={() => {
+          setExpiredModalOpen(false);
+          resetScanner();
+        }}
+        onCancel={() => {
+          setExpiredModalOpen(false);
+          resetScanner();
+        }}
+      />
+
       {/* Confirmation Modal */}
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         title={confirmModal.title}
         message={confirmModal.message}
         details={confirmModal.details}
-        confirmLabel={confirmModal.confirmLabel}
-        confirmColor={confirmModal.confirmColor}
+        confirmText={confirmModal.confirmLabel}
+        variant={confirmModal.confirmColor === 'green' ? 'success' : 'primary'}
         isLoading={processMutation.isPending}
         onConfirm={handleConfirm}
         onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}

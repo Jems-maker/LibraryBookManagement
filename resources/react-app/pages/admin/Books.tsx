@@ -4,6 +4,7 @@ import { adminApi } from '@/api/admin';
 import type { Book, Category, Author, Publisher } from '@/types';
 import SearchableSelect from '@/components/SearchableSelect';
 import ConfirmModal from '@/components/ConfirmModal';
+import { useToast } from '@/components/Toast';
 
 // Simplified Debounce Hook for local use
 function useDebounce<T>(value: T, delay = 400): T {
@@ -52,8 +53,11 @@ export default function Books() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-books'] });
       setDeleteTarget(null);
+      showToast('Book deleted successfully.', 'success');
     }
   });
+
+  const { showToast } = useToast();
 
   const handleDelete = () => {
     if (deleteTarget) deleteMutation.mutate(deleteTarget.id);
@@ -189,6 +193,7 @@ export default function Books() {
 
 function BookModal({ book, categories, authors, publishers, onClose }: any) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     title: book?.title || '',
     author_id: book?.author_id || '',
@@ -203,15 +208,20 @@ function BookModal({ book, categories, authors, publishers, onClose }: any) {
   const [cover, setCover] = useState<File | null>(null);
 
   const [error, setError] = useState('');
+  const authorOptions = Array.isArray(authors) ? authors : [];
+  const categoryOptions = Array.isArray(categories) ? categories : [];
+  const publisherOptions = Array.isArray(publishers) ? publishers : [];
 
   const mutation = useMutation({
     mutationFn: (data: FormData) => book ? adminApi.books.update(book.id, data) : adminApi.books.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-books'] });
       onClose();
+      showToast(book ? 'Book updated successfully.' : 'Book created successfully.', 'success');
     },
     onError: (err: any) => {
       setError(err.response?.data?.message || err.response?.data?.error || 'Failed to save book. Please check your input.');
+      showToast(err.response?.data?.message || 'Failed to save book.', 'error');
     }
   });
 
@@ -251,7 +261,7 @@ function BookModal({ book, categories, authors, publishers, onClose }: any) {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Author</label>
               <SearchableSelect
-                options={authors.map((a: any) => ({ label: a.name, value: a.id }))}
+                options={authorOptions.map((a: any) => ({ label: a.name, value: a.id }))}
                 value={formData.author_id}
                 onChange={(val: any) => setFormData({ ...formData, author_id: val })}
                 placeholder="Select Author"
@@ -260,7 +270,7 @@ function BookModal({ book, categories, authors, publishers, onClose }: any) {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Publisher</label>
               <SearchableSelect
-                options={publishers.map((p: any) => ({ label: p.name, value: p.id }))}
+                options={publisherOptions.map((p: any) => ({ label: p.name, value: p.id }))}
                 value={formData.publisher_id}
                 onChange={(val: any) => setFormData({ ...formData, publisher_id: val })}
                 placeholder="Select Publisher"
@@ -273,7 +283,7 @@ function BookModal({ book, categories, authors, publishers, onClose }: any) {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Category</label>
               <SearchableSelect
-                options={categories.map((c: any) => ({ label: c.name, value: c.id }))}
+                options={categoryOptions.map((c: any) => ({ label: c.name, value: c.id }))}
                 value={formData.category_id}
                 onChange={(val: any) => setFormData({ ...formData, category_id: val })}
                 placeholder="Select Category"

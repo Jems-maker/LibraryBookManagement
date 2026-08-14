@@ -15,11 +15,11 @@ export default function SearchableSelect({ options, value, onChange, placeholder
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredOptions = options.filter((opt: any) => 
-    opt.label.toLowerCase().includes(search.toLowerCase())
+  const filteredOptions = (options || []).filter((opt: any) => 
+    opt?.label != null && String(opt.label).toLowerCase().includes(search.toLowerCase())
   );
 
-  const selectedLabel = options.find((o: any) => String(o.value) === String(value))?.label || '';
+  const selectedLabel = (options || []).find((o: any) => String(o?.value) === String(value))?.label || '';
 
   return (
     <div ref={wrapperRef} className="relative">

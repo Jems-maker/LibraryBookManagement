@@ -23,7 +23,7 @@ class AwardApiController extends Controller
 
     public function download(User $student): \Symfony\Component\HttpFoundation\Response
     {
-        $settings = Setting::first();
+        $settings = Setting::pluck('value', 'key');
         $student->load('profile');
         $student->total_points = $student->rewardPoints()->sum('points');
 

@@ -1,12 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin';
+import ConfirmModal from '@/components/ConfirmModal';
+import { useToast } from '@/components/Toast';
 
 export default function BorrowRequests() {
   const [status, setStatus] = useState('Pending');
   const [page, setPage] = useState(1);
   const [approvingReq, setApprovingReq] = useState<any>(null);
+  const [rejectTarget, setRejectTarget] = useState<any>(null);
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   // Track previous notification count so we only refetch when something changes
   const prevPendingRef = useRef<number | null>(null);
@@ -21,12 +25,23 @@ export default function BorrowRequests() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-requests'] });
       setApprovingReq(null);
+      showToast('Borrow request approved successfully.', 'success');
+    },
+    onError: (err: any) => {
+      showToast(err.response?.data?.message || 'Failed to approve request.', 'error');
     }
   });
 
   const rejectMutation = useMutation({
     mutationFn: (id: number) => adminApi.borrowRequests.reject(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-requests'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-requests'] });
+      setRejectTarget(null);
+      showToast('Borrow request rejected.', 'info');
+    },
+    onError: (err: any) => {
+      showToast(err.response?.data?.message || 'Failed to reject request.', 'error');
+    }
   });
 
   // Smart poll: check pending request count every 10 seconds, refetch list only if count changed
@@ -116,7 +131,7 @@ export default function BorrowRequests() {
                           Approve
                         </button>
                         <button
-                          onClick={() => { if (window.confirm('Reject request?')) rejectMutation.mutate(req.id); }}
+                          onClick={() => setRejectTarget(req)}
                           disabled={rejectMutation.isPending}
                           className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 font-bold rounded-lg transition disabled:opacity-50"
                         >
@@ -150,6 +165,17 @@ export default function BorrowRequests() {
           isLoading={approveMutation.isPending}
         />
       )}
+
+      <ConfirmModal
+        isOpen={!!rejectTarget}
+        title="Reject Request"
+        message={`Are you sure you want to reject ${rejectTarget?.user?.name ?? 'this student'}'s request for "${rejectTarget?.book?.title ?? 'this book'}"?`}
+        variant="danger"
+        confirmText="Reject"
+        onConfirm={() => rejectTarget && rejectMutation.mutate(rejectTarget.id)}
+        onCancel={() => setRejectTarget(null)}
+        isLoading={rejectMutation.isPending}
+      />
     </div>
   );
 }
@@ -181,7 +207,7 @@ function ApproveModal({ req, onConfirm, onCancel, isLoading }: any) {
             <div className="border-t border-gray-200 pt-3">
               <p className="text-xs text-gray-400 uppercase font-semibold">Book</p>
               <p className="font-bold text-gray-900">{req.book?.title}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{req.book?.author?.name || 'Unknown Author'} &bull; {req.book?.publisher?.name || 'Unknown Publisher'}</p>
+              <p className="text-xs text-gray-500 mt-0.5">Author: {req.book?.author?.name || 'Unknown Author'} &bull; Publisher: {req.book?.publisher?.name || 'Unknown Publisher'}</p>
               {req.book?.year_of_book && <p className="text-xs text-gray-500">Year: {req.book.year_of_book}</p>}
               <p className="text-xs text-gray-500 font-mono mt-1">{req.book?.book_id}</p>
             </div>

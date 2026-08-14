@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin';
 import ConfirmModal from '@/components/ConfirmModal';
+import { useToast } from '@/components/Toast';
 
 function useDebounce<T>(value: T, delay = 400): T {
   const [debouncedValue, setDebouncedValue] = React.useState<T>(value);
@@ -17,6 +18,7 @@ export default function Courses() {
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebounce(search);
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<any | null>(null);
@@ -32,6 +34,7 @@ export default function Courses() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-courses'] });
       setDeleteTarget(null);
+      showToast('Course deleted successfully.', 'success');
     }
   });
 
@@ -133,6 +136,7 @@ export default function Courses() {
 
 function CourseModal({ course, onClose }: { course: any, onClose: () => void }) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     name: course?.name || '',
     description: course?.description || '',
@@ -143,9 +147,10 @@ function CourseModal({ course, onClose }: { course: any, onClose: () => void }) 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-courses'] });
       onClose();
+      showToast(course ? 'Course updated successfully.' : 'Course created successfully.', 'success');
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || 'Error saving course');
+      showToast(err.response?.data?.message || 'Error saving course', 'error');
     }
   });
 

@@ -3,6 +3,22 @@ import { useQuery } from '@tanstack/react-query';
 import { studentApi } from '@/api/student';
 import { format, parseISO } from 'date-fns';
 
+const statusStyles: Record<string, string> = {
+  'Returned': 'bg-green-100 text-green-700',
+  'Borrowed': 'bg-blue-100 text-blue-700',
+  'Overdue': 'bg-red-100 text-red-700',
+  'Pending Claim': 'bg-yellow-100 text-yellow-700',
+  'Expired': 'bg-gray-100 text-gray-500',
+};
+
+function StatusBadge({ status }: { status: string }) {
+  return (
+    <span className={`px-2.5 py-1 text-xs font-bold rounded-xl ${statusStyles[status] || 'bg-gray-100 text-gray-700'}`}>
+      {status}
+    </span>
+  );
+}
+
 export default function History() {
   const [page, setPage] = useState(1);
   const { data: historyData, isLoading } = useQuery({
@@ -28,14 +44,13 @@ export default function History() {
                   <div>
                     <p className="font-bold text-gray-900 truncate">{record.book?.title}</p>
                     {record.book?.year_of_book && <p className="text-[10px] text-gray-400">{record.book.year_of_book}</p>}
-                    <div className="flex gap-4 mt-1">
-                      <span className="text-xs text-gray-500">Borrowed: {record.borrow_date ? format(parseISO(record.borrow_date), 'MMM d, yyyy') : '—'}</span>
-                      <span className="text-xs text-gray-500">Returned: {record.return_date ? format(parseISO(record.return_date), 'MMM d, yyyy') : '—'}</span>
+                    <div className="flex gap-4 mt-1 flex-wrap">
+                      <span className="text-xs text-gray-500">Borrowed: {record.borrow_date ? format(parseISO(record.borrow_date), 'MMM d, yyyy h:mm a') : '—'}</span>
+                      <span className="text-xs text-gray-500">Due: {record.due_date ? format(parseISO(record.due_date), 'MMM d, yyyy h:mm a') : '—'}</span>
+                      <span className="text-xs text-gray-500">Returned: {record.return_date ? format(parseISO(record.return_date), 'MMM d, yyyy h:mm a') : '—'}</span>
                     </div>
                   </div>
-                  <span className={`px-2.5 py-1 text-xs font-bold rounded-xl ${record.status === 'Returned' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                    {record.status}
-                  </span>
+                  <StatusBadge status={record.status} />
                 </div>
               ))}
             </div>

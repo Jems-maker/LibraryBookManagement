@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/components/Toast';
 
 export default function Settings() {
   const { refresh } = useAuth();
@@ -17,6 +18,10 @@ export default function Settings() {
     head_role: 'School Principal',
     head_name: '',
     penalty_amount: '10',
+    penalty_grace_period_mins: '5',
+    penalty_grace_period_days: '0',
+    auto_reject_mins: '5',
+    auto_expire_mins: '5',
     admin_name: '',
     admin_email: '',
   });
@@ -31,6 +36,10 @@ export default function Settings() {
         head_role: settings.head_role || 'School Principal',
         head_name: settings.head_name || '',
         penalty_amount: settings.penalty_amount?.toString() || '10',
+        penalty_grace_period_mins: settings.penalty_grace_period_mins?.toString() || '5',
+        penalty_grace_period_days: settings.penalty_grace_period_days?.toString() || '0',
+        auto_reject_mins: settings.auto_reject_mins?.toString() || '5',
+        auto_expire_mins: settings.auto_expire_mins?.toString() || '5',
         admin_name: settings.admin_name || '',
         admin_email: settings.admin_email || '',
       });
@@ -42,9 +51,11 @@ export default function Settings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
       refresh();
-      alert('Settings updated successfully!');
+      showToast('Settings updated successfully!', 'success');
     }
   });
+
+  const { showToast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +65,10 @@ export default function Settings() {
     data.append('head_role', formData.head_role);
     data.append('head_name', formData.head_name);
     data.append('penalty_amount', formData.penalty_amount);
+    data.append('penalty_grace_period_mins', formData.penalty_grace_period_mins);
+    data.append('penalty_grace_period_days', formData.penalty_grace_period_days);
+    data.append('auto_reject_mins', formData.auto_reject_mins);
+    data.append('auto_expire_mins', formData.auto_expire_mins);
     data.append('admin_name', formData.admin_name);
     data.append('admin_email', formData.admin_email);
     if (logo) data.append('logo', logo);
@@ -142,6 +157,28 @@ export default function Settings() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Penalty Amount (per 24 hrs overdue, ₱)</label>
                 <input type="number" step="0.01" min="0" value={formData.penalty_amount} onChange={e => setFormData({ ...formData, penalty_amount: e.target.value })} className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Grace Period (Days)</label>
+                <input type="number" min="0" value={formData.penalty_grace_period_days} onChange={e => setFormData({ ...formData, penalty_grace_period_days: e.target.value })} className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Grace Period (Minutes)</label>
+                <input type="number" min="0" value={formData.penalty_grace_period_mins} onChange={e => setFormData({ ...formData, penalty_grace_period_mins: e.target.value })} className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 mb-4">Borrow Request Limits</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Auto-Reject Pending Requests (Minutes)</label>
+                <input type="number" min="1" value={formData.auto_reject_mins} onChange={e => setFormData({ ...formData, auto_reject_mins: e.target.value })} className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Auto-Expire Unclaimed Receipts (Minutes)</label>
+                <input type="number" min="1" value={formData.auto_expire_mins} onChange={e => setFormData({ ...formData, auto_expire_mins: e.target.value })} className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
           </div>

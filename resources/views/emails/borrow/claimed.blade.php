@@ -15,13 +15,7 @@
                     {{-- Logo & Header --}}
                     <tr>
                         <td style="padding: 40px 40px 20px; text-align: center; border-bottom: 1px solid #f3f4f6;">
-                            <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 16px;"><tr>
-                            <td style="width: 52px; height: 52px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 14px; text-align: center; vertical-align: middle;">
-                                <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto;">
-                                    <tr><td style="width: 14px; height: 14px; background: #ffffff; border-radius: 50%; font-size: 1px; line-height: 1px;">&nbsp;</td></tr>
-                                </table>
-                            </td>
-                            </tr></table>
+                            <div style="width: 52px; height: 52px; line-height: 52px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 14px; text-align: center; margin: 0 auto 16px; font-size: 26px;">✅</div>
                             <h1 style="margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.5px; color: #059669;">Book Successfully Claimed</h1>
                             <p style="margin: 8px 0 0; font-size: 14px; color: #6b7280;">Borrow ID: {{ $record->borrow_id }}</p>
                         </td>
@@ -53,7 +47,8 @@
                                     @endif
                                     <td style="vertical-align: top;">
                                         <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 600;">{{ $record->book->title }}</h3>
-                                        <p style="margin: 0 0 2px; font-size: 14px; color: #4b5563;">{{ $record->book->author->name ?? '' }}</p>
+                                        <p style="margin: 0 0 2px; font-size: 14px; color: #4b5563;">Author: {{ $record->book->author->name ?? '' }}</p>
+                                        <p style="margin: 0; font-size: 13px; color: #6b7280;">Publisher: {{ $record->book->publisher->name ?? 'N/A' }}</p>
                                         <p style="margin: 0; font-size: 13px; color: #6b7280;">Category: {{ $record->book->category->name ?? '' }}</p>
                                         @if($record->book->year_of_book)
                                         <p style="margin: 2px 0 0; font-size: 13px; color: #6b7280;">Year: {{ $record->book->year_of_book }}</p>
@@ -79,7 +74,7 @@
                                 </tr>
                                 <tr>
                                     <td style="padding: 8px 0; color: #6b7280;">Course</td>
-                                    <td style="padding: 8px 0; font-weight: 500;">{{ $record->user->profile?->course ?? $record->user->studentProfile?->course ?? 'N/A' }}</td>
+                                    <td style="padding: 8px 0; font-weight: 500;">{{ $record->user->profile?->course_description ?? $record->user->studentProfile?->course_description ?? 'N/A' }}</td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 8px 0; color: #6b7280;">Due Date</td>

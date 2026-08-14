@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin';
 import type { Publisher } from '@/types';
 import ConfirmModal from '@/components/ConfirmModal';
+import { useToast } from '@/components/Toast';
 
 function useDebounce<T>(value: T, delay = 400): T {
     const [debouncedValue, setDebouncedValue] = React.useState<T>(value);
@@ -18,6 +19,7 @@ export default function Publishers() {
     const [page, setPage] = useState(1);
     const debouncedSearch = useDebounce(search);
     const queryClient = useQueryClient();
+    const { showToast } = useToast();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPublisher, setEditingPublisher] = useState<Publisher | null>(null);
@@ -35,6 +37,7 @@ export default function Publishers() {
             queryClient.invalidateQueries({ queryKey: ['admin-publishers'] });
             queryClient.invalidateQueries({ queryKey: ['admin-publishers-list'] });
             setDeleteTarget(null);
+            showToast('Publisher deleted successfully.', 'success');
         }
     });
 
@@ -136,6 +139,7 @@ export default function Publishers() {
 
 function PublisherModal({ publisher, onClose }: { publisher: Publisher | null, onClose: () => void }) {
     const queryClient = useQueryClient();
+    const { showToast } = useToast();
     const [formData, setFormData] = useState({
         name: publisher?.name || '',
         address: publisher?.address || '',
@@ -147,6 +151,7 @@ function PublisherModal({ publisher, onClose }: { publisher: Publisher | null, o
             queryClient.invalidateQueries({ queryKey: ['admin-publishers'] });
             queryClient.invalidateQueries({ queryKey: ['admin-publishers-list'] });
             onClose();
+            showToast(publisher ? 'Publisher updated successfully.' : 'Publisher created successfully.', 'success');
         }
     });
 

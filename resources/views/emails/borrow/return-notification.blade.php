@@ -10,29 +10,25 @@
 <tr><td align="center">
 <table role="presentation" width="580" cellspacing="0" cellpadding="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
 
-    {{-- Green header band with icon --}}
-    <tr><td style="background:linear-gradient(135deg,#10b981,#059669);padding:32px 40px;text-align:center;">
-        <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto 16px;"><tr>
-        <td style="width:56px;height:56px;background:rgba(255,255,255,0.15);border-radius:16px;text-align:center;vertical-align:middle;">
-            <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto;">
-                <tr><td style="width:22px;height:22px;border:3px solid #ffffff;border-radius:50%;text-align:center;vertical-align:middle;font-size:1px;line-height:1px;">
-                    <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto;"><tr>
-                    <td style="width:8px;height:8px;background:#ffffff;border-radius:50%;font-size:1px;line-height:1px;">&nbsp;</td>
-                    </tr></table>
-                </td></tr>
-            </table>
-        </td>
-        </tr></table>
-        <h1 style="margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">Book Returned Successfully</h1>
+    {{-- Header band — different styles for overdue vs on-time --}}
+    <tr><td style="background:{{ $isOverdue ? 'linear-gradient(135deg,#f97316,#dc2626)' : 'linear-gradient(135deg,#10b981,#059669)' }};padding:32px 40px;text-align:center;">
+        <div style="width:56px;height:56px;line-height:56px;background:rgba(255,255,255,0.15);border-radius:16px;text-align:center;margin:0 auto 16px;font-size:28px;">{{ $isOverdue ? '⚠️' : '✅' }}</div>
+        <h1 style="margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">{{ $isOverdue ? 'Book Returned — Overdue' : 'Book Returned Successfully' }}</h1>
         <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.85);">{{ now()->format('F d, Y — h:i A') }}</p>
     </td></tr>
 
     {{-- Greeting --}}
     <tr><td style="padding:32px 40px 0;">
         <p style="margin:0;font-size:15px;color:#374151;">Hi <strong>{{ $record->user?->name }}</strong>,</p>
-        <p style="margin:12px 0 0;font-size:14px;color:#6b7280;line-height:1.6;">
-            Thank you for returning your book to the library. Your return has been successfully processed. Below are your return details.
+        @if($isOverdue)
+        <p style="margin:12px 0 0;font-size:14px;color:#dc2626;line-height:1.6;">
+            Your book has been returned, but it was <strong>returned overdue</strong>. A late penalty has been applied to your account. Please review the details below and settle the penalty at the library counter.
         </p>
+        @else
+        <p style="margin:12px 0 0;font-size:14px;color:#6b7280;line-height:1.6;">
+            Thank you for returning your book on time! Your return has been successfully processed. Below are your return details.
+        </p>
+        @endif
     </td></tr>
 
     {{-- Book details --}}
@@ -41,16 +37,18 @@
             <tr>
                 @if($record->book?->cover_image)
                 <td width="90" style="padding:20px;vertical-align:top;">
-                    <img src="{{ $message->embed(storage_path('app/public/' . $record->book->cover_image)) }}"
-                         alt="{{ $record->book->title }}"
-                         width="70"
-                         style="border-radius:6px;border:1px solid #e5e7eb;display:block;">
+                    @if(Str::startsWith($record->book->cover_image, 'http'))
+                        <img src="{{ $record->book->cover_image }}" alt="{{ $record->book->title }}" width="70" style="border-radius:6px;border:1px solid #e5e7eb;display:block;">
+                    @else
+                        <img src="{{ $message->embed(storage_path('app/public/' . $record->book->cover_image)) }}" alt="{{ $record->book->title }}" width="70" style="border-radius:6px;border:1px solid #e5e7eb;display:block;">
+                    @endif
                 </td>
                 @endif
                 <td style="padding:20px {{ $record->book?->cover_image ? '20px' : '20px 20px 20px 20px' }};vertical-align:top;">
                     <p style="margin:0 0 4px;font-size:11px;font-weight:600;text-transform:uppercase;color:#9ca3af;letter-spacing:0.5px;">{{ $record->book?->category?->name ?? 'Book' }}</p>
                     <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#111827;line-height:1.3;">{{ $record->book?->title ?? 'Unknown Book' }}</p>
-                    <p style="margin:0;font-size:13px;color:#6b7280;">by {{ $record->book?->author?->name ?? '—' }}</p>
+                    <p style="margin:0;font-size:13px;color:#6b7280;">Author: {{ $record->book?->author?->name ?? '—' }}</p>
+                    <p style="margin:2px 0 0;font-size:12px;color:#6b7280;">Publisher: {{ $record->book?->publisher?->name ?? '—' }}</p>
                     @if($record->book?->year_of_book)
                     <p style="margin:2px 0 0;font-size:12px;color:#6b7280;">Year: {{ $record->book->year_of_book }}</p>
                     @endif
@@ -90,17 +88,17 @@
                         </td>
                         <td style="padding-bottom:8px;">
                             <p style="margin:0 0 4px;font-size:10px;font-weight:600;text-transform:uppercase;color:#9ca3af;letter-spacing:0.5px;">Course</p>
-                            <p style="margin:0;font-size:14px;font-weight:700;color:#111827;">{{ $record->user?->profile?->course ?? $record->user?->studentProfile?->course ?? 'N/A' }}</p>
+                            <p style="margin:0;font-size:14px;font-weight:700;color:#111827;">{{ $record->user?->profile?->course_description ?? $record->user?->studentProfile?->course_description ?? 'N/A' }}</p>
                         </td>
                     </tr>
                     <tr>
                         <td width="50%">
                             <p style="margin:0 0 4px;font-size:10px;font-weight:600;text-transform:uppercase;color:#9ca3af;letter-spacing:0.5px;">Borrow Date</p>
-                            <p style="margin:0;font-size:14px;font-weight:700;color:#111827;">{{ $record->borrow_date?->format('M d, Y') ?? 'N/A' }}</p>
+                            <p style="margin:0;font-size:14px;font-weight:700;color:#111827;">{{ $record->borrow_date?->format('M d, Y — h:i A') ?? 'N/A' }}</p>
                         </td>
                         <td width="50%">
                             <p style="margin:0 0 4px;font-size:10px;font-weight:600;text-transform:uppercase;color:#9ca3af;letter-spacing:0.5px;">Original Due Date</p>
-                            <p style="margin:0;font-size:14px;font-weight:700;color:#111827;">{{ $record->due_date?->format('M d, Y') ?? 'N/A' }}</p>
+                            <p style="margin:0;font-size:14px;font-weight:700;color:#111827;">{{ $record->due_date?->format('M d, Y — h:i A') ?? 'N/A' }}</p>
                         </td>
                     </tr>
                 </table>
@@ -108,26 +106,69 @@
         </table>
     </td></tr>
 
-    {{-- Penalty notice if applicable --}}
-    @php
-        $penalty = $record->penalties?->whereIn('reason', ['Overdue Return', 'Overdue Return (Hourly)'])->first();
-    @endphp
-    @if($penalty)
+    {{-- Penalty notice if overdue --}}
+    @if($isOverdue)
     <tr><td style="padding:20px 40px 0;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;">
-            <tr><td>
-                <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#dc2626;">⚠ Overdue Penalty Applied</p>
-                <p style="margin:0;font-size:13px;color:#991b1b;">
-                    A penalty of <strong>₱{{ number_format($penalty->amount, 2) }}</strong> has been applied for returning {{ $penalty->remarks }}. Please settle this at the library counter.
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:20px;">
+            <tr><td style="padding-bottom:12px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td>
+                            <span style="font-size:18px;">⚠️</span>
+                            <span style="margin-left:8px;font-size:14px;font-weight:700;color:#dc2626;vertical-align:middle;">Overdue Penalty Applied</span>
+                        </td>
+                        <td align="right">
+                            <span style="font-size:18px;font-weight:800;color:#dc2626;">₱{{ number_format($penaltyAmount ?? 0, 2) }}</span>
+                        </td>
+                    </tr>
+                </table>
+            </td></tr>
+            <tr><td style="padding:12px 0;border-top:1px solid #fecaca;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td width="50%" style="padding:4px 0;">
+                            <span style="font-size:11px;font-weight:600;text-transform:uppercase;color:#9ca3af;letter-spacing:0.5px;">Total Penalty</span>
+                            <p style="margin:2px 0 0;font-size:15px;font-weight:700;color:#dc2626;">₱{{ number_format($penaltyAmount ?? 0, 2) }}</p>
+                        </td>
+                        <td width="50%" style="padding:4px 0;">
+                            <span style="font-size:11px;font-weight:600;text-transform:uppercase;color:#9ca3af;letter-spacing:0.5px;">Status</span>
+                            <p style="margin:2px 0 0;font-size:15px;font-weight:700;color:#92400e;">Unpaid</p>
+                        </td>
+                    </tr>
+                    @if($penaltyRemarks)
+                    <tr><td colspan="2" style="padding:8px 0 0;">
+                        <span style="font-size:11px;font-weight:600;text-transform:uppercase;color:#9ca3af;letter-spacing:0.5px;">Details</span>
+                        <p style="margin:2px 0 0;font-size:13px;color:#991b1b;">{{ $penaltyRemarks }}</p>
+                    </td></tr>
+                    @endif
+                </table>
+            </td></tr>
+            <tr><td style="padding:12px 0 0;border-top:1px solid #fecaca;">
+                <p style="margin:0;font-size:13px;color:#991b1b;line-height:1.5;">
+                    💡 Please proceed to the library counter to settle your penalty. Overdue payments help maintain fair access for all students.
                 </p>
             </td></tr>
         </table>
     </td></tr>
     @else
+    {{-- On-time return notice --}}
     <tr><td style="padding:20px 40px 0;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:20px;">
             <tr><td>
-                <p style="margin:0;font-size:13px;color:#166534;">✓ No penalty — book returned on time. Thank you!</p>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td>
+                            <span style="font-size:18px;">🎉</span>
+                            <span style="margin-left:8px;font-size:14px;font-weight:700;color:#166534;vertical-align:middle;">No Penalty — Returned On Time</span>
+                        </td>
+                        <td align="right">
+                            <span style="font-size:11px;font-weight:600;color:#16a34a;background:#dcfce7;padding:4px 10px;border-radius:999px;">✓ All Clear</span>
+                        </td>
+                    </tr>
+                </table>
+                <p style="margin:12px 0 0;font-size:13px;color:#166534;line-height:1.5;border-top:1px solid #bbf7d0;padding-top:12px;">
+                    Thank you for returning your book on or before the due date. You've also earned <strong>10 Reward Points</strong> for your timely return. Keep up the great habit!
+                </p>
             </td></tr>
         </table>
     </td></tr>

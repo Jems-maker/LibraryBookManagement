@@ -8,6 +8,11 @@
             color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; 
             background-color: {{ $type === 'overdue' ? '#EF4444' : '#F59E0B' }};
         }
+        .icon-circle {
+            display: inline-block; width: 48px; height: 48px; line-height: 48px;
+            background: rgba(255,255,255,0.15); border-radius: 14px;
+            font-size: 24px; text-align: center; margin-bottom: 12px;
+        }
         .content { padding: 20px; }
         .details { 
             background-color: #f9fafb; padding: 15px; border-radius: 6px; margin: 20px 0; 
@@ -19,15 +24,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 12px;"><tr>
-            <td style="width: 48px; height: 48px; background: rgba(255,255,255,0.15); border-radius: 14px; text-align: center; vertical-align: middle;">
-                <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto;">
-                    <tr><td style="width: 3px; height: 14px; background: #ffffff; border-radius: 2px; font-size: 1px; line-height: 1px;">&nbsp;</td></tr>
-                    <tr><td style="height: 4px; font-size: 1px; line-height: 1px;">&nbsp;</td></tr>
-                    <tr><td style="width: 3px; height: 3px; background: #ffffff; border-radius: 50%; font-size: 1px; line-height: 1px;">&nbsp;</td></tr>
-                </table>
-            </td>
-            </tr></table>
+            <div class="icon-circle">{{ $type === 'overdue' ? '⛔' : '⚠️' }}</div>
             <h2 style="margin: 0;">
                 @if($type === 'overdue')
                     Book Overdue Notice
@@ -46,21 +43,31 @@
                 <p>Please return it to the library immediately. A penalty of &#8369;{{ number_format($penaltyAmount, 2) }} per 24 hours overdue will be applied until the book is returned.</p>
             @elseif($type === 'due_now')
                 <p>This is a notice that your scheduled time to return the following book has <strong>arrived</strong>.</p>
-                <p>Please return it to the library immediately. A penalty of &#8369;{{ number_format($penaltyAmount, 2) }} per 24 hours overdue will be applied if not returned.</p>
+                <p>Please return it to the library <strong>immediately</strong>. If not returned within <strong>5 minutes</strong> from the due time, the system will automatically apply an overdue penalty of &#8369;{{ number_format($penaltyAmount, 2) }} per 24 hours. <span style="color: #DC2626; font-weight: bold;">You have a 5-minute grace period to return the book before penalties kick in.</span></p>
             @else
                 <p>This is a friendly reminder that the following book is due <strong>tomorrow</strong>.</p>
-                <p>Please return it to the library by the due date to avoid any late penalties.</p>
+                <p>Please return it to the library by the due date to avoid any late penalties. <strong>Note:</strong> If not returned within 5 minutes after the due time, a penalty of &#8369;{{ number_format($penaltyAmount, 2) }} per 24 hours will be <strong>automatically applied</strong>.</p>
             @endif
             
             <div class="details">
+                @if($record->book?->cover_image)
+                <div style="text-align: center; margin-bottom: 16px;">
+                    @if(Str::startsWith($record->book->cover_image, 'http'))
+                        <img src="{{ $record->book->cover_image }}" alt="{{ $record->book->title }}" width="120" style="border-radius: 6px; border: 1px solid #e5e7eb; display: inline-block;">
+                    @else
+                        <img src="{{ $message->embed(storage_path('app/public/' . $record->book->cover_image)) }}" alt="{{ $record->book->title }}" width="120" style="border-radius: 6px; border: 1px solid #e5e7eb; display: inline-block;">
+                    @endif
+                </div>
+                @endif
                 <p><strong>Borrow ID:</strong> {{ $record->borrow_id }}</p>
                 <p><strong>Book Title:</strong> {{ $record->book->title }}</p>
                 <p><strong>Author:</strong> {{ $record->book->author?->name ?? 'N/A' }}</p>
+                <p><strong>Publisher:</strong> {{ $record->book->publisher?->name ?? 'N/A' }}</p>
                 <p><strong>Category:</strong> {{ $record->book->category?->name ?? 'N/A' }}</p>
                 @if($record->book->year_of_book)
                 <p><strong>Year:</strong> {{ $record->book->year_of_book }}</p>
                 @endif
-                <p><strong>Course:</strong> {{ $record->user->profile?->course ?? $record->user->studentProfile?->course ?? 'N/A' }}</p>
+                <p><strong>Course:</strong> {{ $record->user->profile?->course_description ?? $record->user->studentProfile?->course_description ?? 'N/A' }}</p>
                 <p><strong>Due Date:</strong> <span style="color: {{ $type === 'overdue' ? '#EF4444' : '#F59E0B' }}; font-weight: bold;">{{ \Carbon\Carbon::parse($record->due_date)->format('M d, Y h:i A') }}</span></p>
             </div>
             

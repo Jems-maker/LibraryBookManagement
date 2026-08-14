@@ -20,9 +20,9 @@ class DashboardApiController extends Controller
         $period = $request->get('period', 'month');
         $cacheKey = "admin_stats_{$period}";
 
-        $overdueThreshold = Carbon::now()->subMinutes(20);
+        $overdueThreshold = Carbon::now()->subMinutes(5);
 
-        $data = Cache::remember($cacheKey, 300, function () use ($period, $overdueThreshold) {
+        $data = Cache::remember($cacheKey, 10, function () use ($period, $overdueThreshold) {
             $totalStudents   = User::where('role', 'student')->count();
             $totalBooks      = Book::sum('total_copies');
             $pendingRequests = BorrowRequest::where('status', 'Pending')->count();
@@ -97,7 +97,7 @@ class DashboardApiController extends Controller
 
     public function notifications(): JsonResponse
     {
-        $overdueThreshold = Carbon::now()->subMinutes(20);
+        $overdueThreshold = Carbon::now()->subMinutes(5);
         $pendingRequests = BorrowRequest::where('status', 'Pending')->count();
         $overdueBooks = BorrowRecord::whereIn('status', ['Borrowed', 'Overdue'])
             ->where('due_date', '<', $overdueThreshold)

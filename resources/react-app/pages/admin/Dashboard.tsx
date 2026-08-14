@@ -54,12 +54,40 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
+/* Helper: get borrow status with 3 states (Active / Due Date / Overdue) */
+function getBorrowStatus(record: any): { label: string; color: string; bg: string; border: string } {
+  const now = new Date();
+  const dueDate = record.due_date ? new Date(record.due_date) : null;
+  const gracePeriodMs = 5 * 60 * 1000;
+
+  if (!dueDate) return { label: 'Active', color: 'text-blue-700', bg: 'bg-blue-100', border: 'border-blue-200' };
+
+  const isOverdue = now.getTime() > dueDate.getTime() + gracePeriodMs;
+  const isDueDate = now.getTime() >= dueDate.getTime() && !isOverdue;
+
+  if (isOverdue) {
+    return { label: 'Overdue', color: 'text-red-700', bg: 'bg-red-100', border: 'border-red-200' };
+  }
+  if (isDueDate) {
+    return { label: 'Due Date', color: 'text-amber-700', bg: 'bg-amber-100', border: 'border-amber-200' };
+  }
+  return { label: 'Active', color: 'text-blue-700', bg: 'bg-blue-100', border: 'border-blue-200' };
+}
+
+function formatDateTime(d: string) {
+  if (!d) return 'N/A';
+  return new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
 /* Active Borrow Detail Modal */
 function BorrowDetailModal({ record, onClose }: { record: any; onClose: () => void }) {
   if (!record) return null;
 
-  const isOverdue = record.due_date && new Date(record.due_date) < new Date(Date.now() - 20 * 60 * 1000);
-  const formatDate = (d: string) => d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : 'N/A';
+  const statusInfo = getBorrowStatus(record);
+  const now = new Date();
+  const dueDate = record.due_date ? new Date(record.due_date) : null;
+  const gracePeriodMs = 5 * 60 * 1000;
+  const isOverdue = dueDate && (now.getTime() > dueDate.getTime() + gracePeriodMs);
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -82,7 +110,7 @@ function BorrowDetailModal({ record, onClose }: { record: any; onClose: () => vo
               <div>
                 <p className="font-bold text-gray-900">{record.user?.name || 'N/A'}</p>
                 <p className="text-xs text-gray-500 font-mono">{record.user?.student_id || record.user?.email || ''}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{record.user?.profile?.course || record.user?.studentProfile?.course || ''}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{record.user?.profile?.course_description || record.user?.profile?.course || record.user?.student_profile?.course || record.user?.studentProfile?.course || ''}</p>
               </div>
             </div>
           </div>
@@ -108,23 +136,17 @@ function BorrowDetailModal({ record, onClose }: { record: any; onClose: () => vo
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-500">Borrow Date</span>
-                <span className="text-sm font-semibold text-gray-900">{formatDate(record.borrow_date)}</span>
+                <span className="text-sm font-semibold text-gray-900">{formatDateTime(record.borrow_date)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-500">Due Date</span>
-                <span className={`text-sm font-semibold ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>{formatDate(record.due_date)}</span>
+                <span className={`text-sm font-semibold ${isOverdue ? 'text-red-600' : 'text-amber-600'}`}>{formatDateTime(record.due_date)}</span>
               </div>
               <div className="flex justify-between items-center pt-1 border-t border-gray-200">
                 <span className="text-sm text-gray-500">Status</span>
-                {isOverdue ? (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
-                    ⚠️ OVERDUE
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">
-                    Active
-                  </span>
-                )}
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${statusInfo.bg} ${statusInfo.color} border ${statusInfo.border}`}>
+                  {statusInfo.label === 'Overdue' ? '⚠️ Overdue' : statusInfo.label === 'Due Date' ? '📅 Due Date' : '● Active'}
+                </span>
               </div>
             </div>
           </div>
@@ -162,8 +184,17 @@ export default function Dashboard() {
 
   const { data: activeBorrowsRes } = useQuery({
     queryKey: ['admin-active-borrows'],
-    queryFn: () => adminApi.borrowRecords.list({ status: 'borrowed' }).then(r => r.data)
+    queryFn: () => adminApi.borrowRecords.list({ status: 'active' }).then(r => r.data),
+    refetchInterval: 15000,
   });
+
+  // Local ticker to force re-renders every 5s so status badges (Active / Due Date / Overdue)
+  // update in real-time based on current time, without needing API calls every time.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Smart poll: check notifications every 30 seconds, refetch stats only if counts changed
   const { data: notifData } = useQuery({
@@ -320,41 +351,45 @@ export default function Dashboard() {
         {/* Active Borrowers */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-bold text-gray-900">Active Borrowers</h2>
+            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+              Active Borrowers
+              <span className="flex items-center gap-1.5 px-2 py-0.5 bg-green-50 text-green-600 text-[10px] font-bold rounded-full border border-green-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                LIVE
+              </span>
+            </h2>
             <span className="px-2.5 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-lg">
               {activeBorrowsRes?.total || 0} Total
             </span>
           </div>
           <div className="space-y-3 flex-1 overflow-y-auto">
             {activeBorrowsRes?.data?.slice(0, 5).map((record: any) => {
-              const isOverdue = record.due_date && new Date(record.due_date) < new Date(Date.now() - 20 * 60 * 1000);
+              const statusInfo = getBorrowStatus(record);
+              const dueDateStr = record.due_date ? new Date(record.due_date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '';
               return (
                 <div
                   key={record.id}
                   onClick={() => setSelectedRecord(record)}
                   className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <img
                       src={`https://ui-avatars.com/api/?name=${encodeURIComponent(record.user?.name ?? '')}&color=7F9CF5&background=EBF4FF&bold=true&size=80`}
                       alt={record.user?.name}
-                      className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-sm"
+                      className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-sm shrink-0"
                     />
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">{record.user?.name}</p>
-                      <p className="text-xs text-gray-500 line-clamp-1 max-w-[150px] sm:max-w-[200px]" title={record.book?.title}>{record.book?.title}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{record.user?.name}</p>
+                      <p className="text-xs text-gray-500 truncate max-w-[130px] sm:max-w-[180px]" title={record.book?.title}>{record.book?.title}</p>
+                      <p className={`text-[10px] mt-0.5 font-mono ${statusInfo.label === 'Overdue' ? 'text-red-500' : statusInfo.label === 'Due Date' ? 'text-amber-500' : 'text-gray-400'}`}>
+                        Due: {dueDateStr}
+                      </p>
                     </div>
                   </div>
-                  <div className="text-right shrink-0 ml-2">
-                    {isOverdue ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">
-                        Overdue
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
-                        Active
-                      </span>
-                    )}
+                  <div className="text-right shrink-0 ml-2 flex flex-col items-end gap-1">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${statusInfo.bg} ${statusInfo.color} border ${statusInfo.border}`}>
+                      {statusInfo.label === 'Overdue' ? '⚠️ Overdue' : statusInfo.label === 'Due Date' ? '📅 Due Date' : '● Active'}
+                    </span>
                   </div>
                 </div>
               );

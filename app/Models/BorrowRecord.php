@@ -17,12 +17,16 @@ class BorrowRecord extends Model
         'qr_code_path',
         'return_qr_path',
         'status',
+        'due_reminder_sent_at',
+        'overdue_reminder_sent_at',
     ];
 
     protected $casts = [
         'borrow_date' => 'datetime',
         'due_date' => 'datetime',
         'return_date' => 'datetime',
+        'due_reminder_sent_at' => 'datetime',
+        'overdue_reminder_sent_at' => 'datetime',
     ];
 
     public function borrowRequest()

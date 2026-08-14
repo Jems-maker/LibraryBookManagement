@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin';
 import type { Author } from '@/types';
 import ConfirmModal from '@/components/ConfirmModal';
+import { useToast } from '@/components/Toast';
 
 function useDebounce<T>(value: T, delay = 400): T {
     const [debouncedValue, setDebouncedValue] = React.useState<T>(value);
@@ -18,6 +19,7 @@ export default function Authors() {
     const [page, setPage] = useState(1);
     const debouncedSearch = useDebounce(search);
     const queryClient = useQueryClient();
+    const { showToast } = useToast();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAuthor, setEditingAuthor] = useState<Author | null>(null);
@@ -35,6 +37,7 @@ export default function Authors() {
             queryClient.invalidateQueries({ queryKey: ['admin-authors'] });
             queryClient.invalidateQueries({ queryKey: ['admin-authors-list'] });
             setDeleteTarget(null);
+            showToast('Author deleted successfully.', 'success');
         }
     });
 
@@ -136,6 +139,7 @@ export default function Authors() {
 
 function AuthorModal({ author, onClose }: { author: Author | null, onClose: () => void }) {
     const queryClient = useQueryClient();
+    const { showToast } = useToast();
     const [formData, setFormData] = useState({
         name: author?.name || '',
         bio: author?.bio || '',
@@ -147,6 +151,7 @@ function AuthorModal({ author, onClose }: { author: Author | null, onClose: () =
             queryClient.invalidateQueries({ queryKey: ['admin-authors'] });
             queryClient.invalidateQueries({ queryKey: ['admin-authors-list'] });
             onClose();
+            showToast(author ? 'Author updated successfully.' : 'Author created successfully.', 'success');
         }
     });
 

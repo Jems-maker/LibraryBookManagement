@@ -13,9 +13,12 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+import { useQueryClient } from '@tanstack/react-query';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   const refresh = async () => {
     try {
@@ -31,12 +34,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     await authApi.csrf();
     const { data } = await authApi.login({ email, password });
+    queryClient.clear();
     setUser(data.user);
     return data.user;
   };
 
   const logout = async () => {
     await authApi.logout();
+    queryClient.clear();
     setUser(null);
   };
 

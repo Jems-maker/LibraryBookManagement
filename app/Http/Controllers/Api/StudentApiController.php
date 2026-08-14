@@ -71,6 +71,15 @@ class StudentApiController extends Controller
             return response()->json(['message' => 'You already have a pending request for this book.'], 422);
         }
 
+        $activeRecord = BorrowRecord::where('user_id', $user->id)
+            ->where('book_id', $book->id)
+            ->whereIn('status', ['Pending Claim', 'Borrowed', 'Overdue'])
+            ->first();
+
+        if ($activeRecord) {
+            return response()->json(['message' => 'You already have an active borrow or claim for this book.'], 422);
+        }
+
         $request->validate([
             'return_date' => ['required', 'date', 'after_or_equal:today'],
             'return_time' => ['required', 'date_format:H:i'],
@@ -91,11 +100,15 @@ class StudentApiController extends Controller
             'quantity'             => $request->integer('quantity', 1),
         ]);
 
+        // Invalidate admin stats cache so pending count updates
+        \Illuminate\Support\Facades\Cache::forget('admin_stats_week');
+        \Illuminate\Support\Facades\Cache::forget('admin_stats_month');
+
         // Notify student
         if ($user->email) {
             try {
                 \Illuminate\Support\Facades\Mail::to($user->email)
-                    ->send(new \App\Mail\BorrowRequestSubmitted(
+                    ->queue(new \App\Mail\BorrowRequestSubmitted(
                         BorrowRequest::where('user_id', $user->id)
                             ->where('book_id', $book->id)
                             ->latest()->first()

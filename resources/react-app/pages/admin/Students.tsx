@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin';
 import type { User } from '@/types';
 import ConfirmModal from '@/components/ConfirmModal';
+import { useToast } from '@/components/Toast';
 
 function useDebounce<T>(value: T, delay = 400): T {
   const [debouncedValue, setDebouncedValue] = React.useState<T>(value);
@@ -20,6 +21,7 @@ export default function Students() {
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebounce(search);
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const [editingStudent, setEditingStudent] = useState<User | null>(null);
   const [isAddingStudent, setIsAddingStudent] = useState(false);
@@ -30,6 +32,7 @@ export default function Students() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-students'] });
       setDeleteTarget(null);
+      showToast('Student deleted successfully.', 'success');
     }
   });
 
@@ -62,7 +65,10 @@ export default function Students() {
           <div className="p-10 text-center text-gray-400">Loading...</div>
         ) : (
           <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
-            {studentsData?.data.map((student) => (
+            {studentsData?.data.map((student) => {
+              const displayCourse = student.profile?.course_description || student.profile?.course || '—';
+
+              return (
               <div key={student.id} className="rounded-2xl border border-gray-100 bg-gray-50/50 p-4 hover:shadow-md transition-shadow flex flex-col items-center text-center">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
@@ -75,7 +81,7 @@ export default function Students() {
                   </div>
                 </div>
                 <div className="mt-3 space-y-1 w-full">
-                  <div className="text-xs text-gray-500">Course: <span className="font-semibold text-gray-700">{student.profile?.course ?? '—'}</span></div>
+                  <div className="text-xs text-gray-500">Course: <span className="font-semibold text-gray-700">{displayCourse}</span></div>
                   <div className="text-xs text-gray-500">Year: <span className="font-semibold text-gray-700">{student.profile?.year_level ? `${student.profile.year_level}` : '—'}</span></div>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2 justify-center">
@@ -95,7 +101,7 @@ export default function Students() {
                   </button>
                 </div>
               </div>
-            ))}
+            )})}
             {(!studentsData?.data || studentsData.data.length === 0) && (
               <div className="col-span-full text-center py-10 text-gray-400">No students found.</div>
             )}
@@ -134,6 +140,7 @@ export default function Students() {
 
 function EditStudentModal({ student, onClose }: { student: User, onClose: () => void }) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const { data: courses } = useQuery({
     queryKey: ['admin-courses-all'],
@@ -153,6 +160,7 @@ function EditStudentModal({ student, onClose }: { student: User, onClose: () => 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-students'] });
       onClose();
+      showToast('Student updated successfully.', 'success');
     }
   });
 
@@ -199,10 +207,10 @@ function EditStudentModal({ student, onClose }: { student: User, onClose: () => 
               <label className="block text-sm font-semibold text-gray-700 mb-1">Year Level</label>
               <select required value={formData.year_level} onChange={e => setFormData({ ...formData, year_level: e.target.value })} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                 <option value="">Select Year Level</option>
-                <option value="1">1st Year</option>
-                <option value="2">2nd Year</option>
-                <option value="3">3rd Year</option>
-                <option value="4">4th Year</option>
+                <option value="1st Year">1st Year</option>
+                <option value="2nd Year">2nd Year</option>
+                <option value="3rd Year">3rd Year</option>
+                <option value="4th Year">4th Year</option>
               </select>
             </div>
           </div>
@@ -221,6 +229,7 @@ function EditStudentModal({ student, onClose }: { student: User, onClose: () => 
 
 function AddStudentModal({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const { data: courses } = useQuery({
     queryKey: ['admin-courses-all'],
@@ -243,9 +252,10 @@ function AddStudentModal({ onClose }: { onClose: () => void }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-students'] });
       onClose();
+      showToast('Student created successfully.', 'success');
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || 'Error creating student');
+      showToast(err.response?.data?.message || 'Error creating student', 'error');
     }
   });
 
@@ -311,10 +321,10 @@ function AddStudentModal({ onClose }: { onClose: () => void }) {
               <label className="block text-sm font-semibold text-gray-700 mb-1">Year Level</label>
               <select required value={formData.year_level} onChange={e => setFormData({ ...formData, year_level: e.target.value })} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                 <option value="">Select Year Level</option>
-                <option value="1">1st Year</option>
-                <option value="2">2nd Year</option>
-                <option value="3">3rd Year</option>
-                <option value="4">4th Year</option>
+                <option value="1st Year">1st Year</option>
+                <option value="2nd Year">2nd Year</option>
+                <option value="3rd Year">3rd Year</option>
+                <option value="4th Year">4th Year</option>
 
               </select>
             </div>

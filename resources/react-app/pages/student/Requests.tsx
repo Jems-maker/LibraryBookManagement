@@ -32,7 +32,7 @@ function RequestCard({ request }: { request: BorrowRequest }) {
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="font-bold text-gray-900 truncate">{request.book?.title ?? 'Unknown Book'}</p>
-              <p className="text-sm text-gray-400 mt-0.5">{request.book?.author?.name ?? '—'}</p>
+              <p className="text-sm text-gray-400 mt-0.5">Author: {request.book?.author?.name ?? '—'}</p>
             </div>
             <StatusBadge status={request.status} />
           </div>

@@ -12,11 +12,12 @@ export default function Reports() {
     const [to, setTo] = useState(() => new Date().toISOString().split('T')[0]);
     const [categoryId, setCategoryId] = useState('');
 
-    const { data: categories = [] } = useQuery({
+    const { data: categoriesRaw } = useQuery({
         queryKey: ['admin-categories-list'],
         queryFn: () => adminApi.categories.all(),
         staleTime: 30 * 60 * 1000,
     });
+    const categories = Array.isArray(categoriesRaw) ? categoriesRaw : [];
 
     const { data: report, isLoading } = useQuery({
         queryKey: ['admin-reports', from, to, categoryId],

@@ -16,9 +16,13 @@ class SettingApiController extends Controller
         'librarian_name' => 'librarian_name',
         'head_role'      => 'school_head_role',
         'head_name'      => 'school_head_name',
-        'penalty_amount' => 'late_penalty_per_day',
-        'school_logo'    => 'school_logo',
-        'admin_avatar'   => 'admin_avatar',
+        'penalty_amount'            => 'late_penalty_per_day',
+        'penalty_grace_period_mins' => 'penalty_grace_period_mins',
+        'penalty_grace_period_days' => 'penalty_grace_period_days',
+        'auto_reject_mins'          => 'auto_reject_mins',
+        'auto_expire_mins'          => 'auto_expire_mins',
+        'school_logo'               => 'school_logo',
+        'admin_avatar'              => 'admin_avatar',
     ];
 
     public function index(): JsonResponse
@@ -49,17 +53,26 @@ class SettingApiController extends Controller
 
     public function update(Request $request): JsonResponse
     {
-        $request->validate([
-            'school_name'    => 'sometimes|string|max:255',
-            'librarian_name' => 'sometimes|string|max:255',
-            'head_role'      => 'sometimes|in:School President,School Principal',
-            'head_name'      => 'sometimes|string|max:255',
-            'penalty_amount' => 'sometimes|numeric|min:0',
-            'logo'           => 'nullable|image|max:2048',
-            'avatar'         => 'nullable|image|max:2048',
-            'admin_name'     => 'sometimes|string|max:255',
-            'admin_email'    => 'sometimes|email|max:255|unique:users,email,' . auth()->id(),
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'school_name'               => 'sometimes|nullable|string|max:255',
+            'librarian_name'            => 'sometimes|nullable|string|max:255',
+            'head_role'                 => 'sometimes|nullable|in:School President,School Principal',
+            'head_name'                 => 'sometimes|nullable|string|max:255',
+            'penalty_amount'            => 'sometimes|nullable|numeric|min:0',
+            'penalty_grace_period_mins' => 'sometimes|nullable|integer|min:0',
+            'penalty_grace_period_days' => 'sometimes|nullable|integer|min:0',
+            'auto_reject_mins'          => 'sometimes|nullable|integer|min:1',
+            'auto_expire_mins'          => 'sometimes|nullable|integer|min:1',
+            'logo'                      => 'nullable|image|max:2048',
+            'avatar'                    => 'nullable|image|max:2048',
+            'admin_name'                => 'sometimes|nullable|string|max:255',
+            'admin_email'               => 'sometimes|nullable|email|max:255|unique:users,email,' . auth()->id(),
         ]);
+
+        if ($validator->fails()) {
+            \Log::error('Settings Validation Failed:', $validator->errors()->toArray());
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
 
         foreach (self::$keyMap as $apiKey => $dbKey) {
             if ($request->filled($apiKey)) {

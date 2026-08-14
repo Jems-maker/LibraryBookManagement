@@ -57,7 +57,7 @@ class BookController extends Controller
             'publisher_id' => 'required|exists:publishers,id',
             'category_id' => 'required|exists:categories,id',
             'description' => 'nullable|string',
-            'cover_image' => 'nullable|image|max:2048',
+            'cover_image' => 'nullable|mimes:jpeg,jpg,png|max:2048',
             'total_copies' => 'required|integer|min:1',
         ]);
 
@@ -95,7 +95,7 @@ class BookController extends Controller
             'description' => 'nullable|string',
             'cover_image' => 'nullable|image|max:2048',
             'total_copies' => 'required|integer|min:1',
-            'status' => 'required|in:Available,Borrowed,Reserved,Lost,Damaged',
+            'status' => 'sometimes|in:Available,Unavailable',
         ]);
 
         if ($request->hasFile('cover_image')) {
@@ -108,6 +108,23 @@ class BookController extends Controller
         // Adjust available copies if total copies changed
         $diff = $validated['total_copies'] - $book->total_copies;
         $validated['available_copies'] = $book->available_copies + $diff;
+
+        // Ensure available_copies never exceeds total_copies
+        if ($validated['available_copies'] > $validated['total_copies']) {
+            $validated['available_copies'] = $validated['total_copies'];
+        }
+
+        // If status was provided, map it; otherwise ensure it's derived from available_copies
+        if (!isset($validated['status'])) {
+            $validated['status'] = $validated['available_copies'] > 0 ? 'Available' : 'Unavailable';
+        } else {
+            // Enforce: status must match available_copies > 0
+            if ($validated['status'] === 'Available' && $validated['available_copies'] <= 0) {
+                $validated['status'] = 'Unavailable';
+            } elseif ($validated['status'] === 'Unavailable' && $validated['available_copies'] > 0) {
+                $validated['status'] = 'Available';
+            }
+        }
 
         $book->update($validated);
         return redirect()->route('admin.books.index')->with('success', 'Book updated successfully.');

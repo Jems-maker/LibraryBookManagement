@@ -1,6 +1,16 @@
 import api from '@/api/client';
 import type { PaginatedResponse, Book, User, BorrowRequest, BorrowRecord, Category, Author, Publisher } from '@/types';
 
+function normalizeLookupResponse<T>(value: unknown): T[] {
+  if (Array.isArray(value)) return value as T[];
+
+  if (value && typeof value === 'object' && Array.isArray((value as { data?: unknown }).data)) {
+    return (value as { data: T[] }).data;
+  }
+
+  return [];
+}
+
 export const adminApi = {
   // Dashboard
   stats: (params?: any) => api.get('/api/admin/stats', { params }),
@@ -24,7 +34,7 @@ export const adminApi = {
   // Categories, Authors, Publishers
   categories: {
     list: (params?: any) => api.get<PaginatedResponse<Category>>('/api/admin/categories', { params }),
-    all: () => api.get<Category[]>('/api/admin/categories', { params: { all: 1 } }).then(res => res.data),
+    all: () => api.get<unknown>('/api/admin/categories', { params: { all: 1 } }).then(res => normalizeLookupResponse<Category>(res.data)),
     create: (data: any) => api.post('/api/admin/categories', data),
     update: (id: number, data: any) => api.put(`/api/admin/categories/${id}`, data),
     delete: (id: number) => api.delete(`/api/admin/categories/${id}`),
@@ -32,7 +42,7 @@ export const adminApi = {
 
   authors: {
     list: (params?: any) => api.get<PaginatedResponse<Author>>('/api/admin/authors', { params }),
-    all: () => api.get<Author[]>('/api/admin/authors', { params: { all: 1 } }).then(res => res.data),
+    all: () => api.get<unknown>('/api/admin/authors', { params: { all: 1 } }).then(res => normalizeLookupResponse<Author>(res.data)),
     create: (data: any) => api.post('/api/admin/authors', data),
     update: (id: number, data: any) => api.put(`/api/admin/authors/${id}`, data),
     delete: (id: number) => api.delete(`/api/admin/authors/${id}`),
@@ -40,7 +50,7 @@ export const adminApi = {
 
   publishers: {
     list: (params?: any) => api.get<PaginatedResponse<Publisher>>('/api/admin/publishers', { params }),
-    all: () => api.get<Publisher[]>('/api/admin/publishers', { params: { all: 1 } }).then(res => res.data),
+    all: () => api.get<unknown>('/api/admin/publishers', { params: { all: 1 } }).then(res => normalizeLookupResponse<Publisher>(res.data)),
     create: (data: any) => api.post('/api/admin/publishers', data),
     update: (id: number, data: any) => api.put(`/api/admin/publishers/${id}`, data),
     delete: (id: number) => api.delete(`/api/admin/publishers/${id}`),

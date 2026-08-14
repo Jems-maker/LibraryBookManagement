@@ -16,7 +16,11 @@ class BorrowRecordApiController extends Controller
         $query = BorrowRecord::with(['user.profile', 'book.author']);
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            if ($request->status === 'active') {
+                $query->whereIn('status', ['Pending Claim', 'Borrowed', 'Overdue']);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         if ($request->filled('search')) {

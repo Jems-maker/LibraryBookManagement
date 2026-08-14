@@ -24,6 +24,7 @@ import Authors from './pages/admin/Authors';
 import Publishers from './pages/admin/Publishers';
 import Courses from './pages/admin/Courses';
 import Reports from './pages/admin/Reports';
+import AdminHistory from './pages/admin/History';
 export default function App() {
   const { user, isLoading } = useAuth();
 
@@ -60,6 +61,7 @@ export default function App() {
         <Route path="reports" element={<Reports />} />
         <Route path="awards" element={<Awards />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="history" element={<AdminHistory />} />
       </Route>
     </Routes>
   );

@@ -71,7 +71,7 @@ class BorrowRequestApiController extends Controller
             DB::commit();
 
             try {
-                Mail::to($borrowRequest->user->email)->send(new \App\Mail\BorrowRequestReceipt($record));
+                Mail::to($borrowRequest->user->email)->queue(new \App\Mail\BorrowRequestReceipt($record));
             } catch (\Exception $e) {
                 \Log::warning('Email failed: ' . $e->getMessage());
             }
@@ -94,7 +94,7 @@ class BorrowRequestApiController extends Controller
         $borrowRequest->update(['status' => 'Rejected']);
 
         try {
-            Mail::to($borrowRequest->user->email)->send(new \App\Mail\BorrowRequestRejected($borrowRequest));
+            Mail::to($borrowRequest->user->email)->queue(new \App\Mail\BorrowRequestRejected($borrowRequest));
         } catch (\Exception $e) {
             \Log::error('Rejection email failed: ' . $e->getMessage());
         }

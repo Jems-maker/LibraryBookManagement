@@ -15,7 +15,8 @@ function BorrowCard({ record }: { record: BorrowRecord }) {
   const now = new Date();
   const dueDate = record.due_date ? parseISO(record.due_date) : null;
   const borrowDate = record.borrow_date ? parseISO(record.borrow_date) : null;
-  const isOverdue = !!dueDate && now > dueDate;
+  // 5-minute grace period before showing overdue (matches backend & Dashboard behavior)
+  const isOverdue = !!dueDate && now.getTime() > dueDate.getTime() + 5 * 60 * 1000;
   const daysLeft = dueDate ? differenceInDays(dueDate, now) : null;
 
   return (
@@ -55,7 +56,7 @@ function BorrowCard({ record }: { record: BorrowRecord }) {
               <div>
                 <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Due Date</p>
                 <p className={`text-xs font-semibold mt-0.5 ${isOverdue ? 'text-red-600' : 'text-gray-700'}`}>
-                  {format(dueDate, 'MMM d, yyyy')}
+                  {format(dueDate, 'MMM d, yyyy \'at\' h:mm a')}
                   {isOverdue && <span className="ml-1 text-[10px]">({Math.abs(daysLeft ?? 0)}d overdue)</span>}
                   {!isOverdue && daysLeft !== null && <span className="ml-1 text-[10px] text-gray-400">({daysLeft}d left)</span>}
                 </p>

@@ -13,8 +13,23 @@ class StudentProfile extends Model
         'gender',
     ];
 
+    protected $appends = ['course_description'];
+
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function getCourseDescriptionAttribute()
+    {
+        if (!$this->course) return null;
+        
+        static $courses = null;
+        if ($courses === null) {
+            $courses = \App\Models\Course::all()->keyBy('name');
+        }
+        
+        $courseModel = $courses->get($this->course);
+        return $courseModel ? $courseModel->description : $this->course;
     }
 }

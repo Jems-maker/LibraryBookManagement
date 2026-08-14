@@ -10,12 +10,14 @@ use Illuminate\Console\Command;
 class AutoExpireClaims extends Command
 {
     protected $signature = 'claims:auto-expire';
-    protected $description = 'Auto-expire pending claims older than 30 minutes and auto-reject pending requests older than 10 minutes';
+    protected $description = 'Auto-expire pending claims older than 10 minutes and auto-reject pending requests older than 5 minutes';
 
     public function handle()
     {
-        // Auto-reject pending requests not acted upon within 10 minutes.
-        $pendingCutoff = Carbon::now()->subMinutes(10);
+        $autoRejectMins = (int) (\App\Models\Setting::getValue('auto_reject_mins') ?? 5);
+        
+        // Auto-reject pending requests not acted upon within configured minutes.
+        $pendingCutoff = Carbon::now()->subMinutes($autoRejectMins);
 
         $expiredRequests = BorrowRequest::with(['user', 'book'])
             ->where('status', 'Pending')
@@ -26,13 +28,22 @@ class AutoExpireClaims extends Command
         foreach ($expiredRequests as $request) {
             $request->update(['status' => 'Rejected']);
 
-            // Note: No need to restore book copies here because copies are only
-            // decremented upon approval, not when the request is submitted.
+            // If this request was already approved (has a Pending Claim BorrowRecord), expire it too
+            $pendingRecord = BorrowRecord::where('borrow_request_id', $request->id)
+                ->where('status', 'Pending Claim')
+                ->first();
+
+            if ($pendingRecord) {
+                // Restore book copy
+                $pendingRecord->book->increment('available_copies');
+                // Mark record as expired
+                $pendingRecord->update(['status' => 'Expired']);
+            }
 
             // Notify the student
             try {
                 \Illuminate\Support\Facades\Mail::to($request->user->email)
-                    ->send(new \App\Mail\BorrowRequestRejected($request));
+                    ->queue(new \App\Mail\BorrowRequestRejected($request));
             } catch (\Exception $e) {
                 \Log::error('Auto-reject email failed: ' . $e->getMessage());
             }
@@ -44,8 +55,10 @@ class AutoExpireClaims extends Command
             $this->info("Auto-rejected {$rejectedCount} pending request(s).");
         }
 
-        // Auto-expire pending claims older than 30 minutes.
-        $cutoff = Carbon::now()->subMinutes(30);
+        $autoExpireMins = (int) (\App\Models\Setting::getValue('auto_expire_mins') ?? 5);
+
+        // Auto-expire pending claims older than configured minutes.
+        $cutoff = Carbon::now()->subMinutes($autoExpireMins);
 
         $expiredRecords = BorrowRecord::with(['user', 'book', 'borrowRequest'])
             ->where('status', 'Pending Claim')
@@ -69,7 +82,7 @@ class AutoExpireClaims extends Command
             try {
                 if ($record->borrowRequest) {
                     \Illuminate\Support\Facades\Mail::to($record->user->email)
-                        ->send(new \App\Mail\BorrowRequestRejected($record->borrowRequest));
+                        ->queue(new \App\Mail\BorrowRequestRejected($record->borrowRequest));
                 }
             } catch (\Exception $e) {
                 \Log::error('Auto-expire email failed: ' . $e->getMessage());

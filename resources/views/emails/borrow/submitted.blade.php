@@ -14,13 +14,7 @@
                     {{-- Logo & Header --}}
                     <tr>
                         <td style="padding: 40px 40px 20px; text-align: center; border-bottom: 1px solid #f3f4f6;">
-                            <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 16px;"><tr>
-                            <td style="width: 52px; height: 52px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 14px; text-align: center; vertical-align: middle;">
-                                <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto;">
-                                    <tr><td style="width: 22px; height: 22px; border: 3px solid #ffffff; border-radius: 50%; font-size: 1px; line-height: 1px;">&nbsp;</td></tr>
-                                </table>
-                            </td>
-                            </tr></table>
+                            <div style="width: 52px; height: 52px; line-height: 52px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 14px; text-align: center; margin: 0 auto 16px; font-size: 26px;">📋</div>
                             <h1 style="margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.5px;">Request Submitted</h1>
                             <p style="margin: 8px 0 0; font-size: 14px; color: #6b7280;">Your borrow request is currently pending admin approval.</p>
                         </td>
@@ -43,7 +37,7 @@
                                     @endif
                                     <td style="vertical-align: top;">
                                         <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 600;">{{ $borrowRequest->book->title }}</h3>
-                                        <p style="margin: 0 0 2px; font-size: 14px; color: #4b5563;">{{ $borrowRequest->book->author->name ?? 'Unknown Author' }}</p>
+                                        <p style="margin: 0 0 2px; font-size: 14px; color: #4b5563;">Author: {{ $borrowRequest->book->author->name ?? 'Unknown Author' }}</p>
                                         <p style="margin: 0 0 2px; font-size: 13px; color: #6b7280;">Category: {{ $borrowRequest->book->category->name ?? 'N/A' }}</p>
                                         @if($borrowRequest->book->year_of_book)
                                         <p style="margin: 2px 0 2px; font-size: 13px; color: #6b7280;">Year: {{ $borrowRequest->book->year_of_book }}</p>
@@ -73,7 +67,7 @@
                                 </tr>
                                 <tr>
                                     <td style="padding: 8px 0; color: #6b7280;">Course</td>
-                                    <td style="padding: 8px 0; font-weight: 500;">{{ $borrowRequest->user->profile?->course ?? $borrowRequest->user->studentProfile?->course ?? 'N/A' }}</td>
+                                    <td style="padding: 8px 0; font-weight: 500;">{{ $borrowRequest->user->profile?->course_description ?? $borrowRequest->user->studentProfile?->course_description ?? 'N/A' }}</td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 8px 0; color: #6b7280;">Return Date</td>

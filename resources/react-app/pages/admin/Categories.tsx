@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin';
 import type { Category } from '@/types';
 import ConfirmModal from '@/components/ConfirmModal';
+import { useToast } from '@/components/Toast';
 
 function useDebounce<T>(value: T, delay = 400): T {
     const [debouncedValue, setDebouncedValue] = React.useState<T>(value);
@@ -18,6 +19,7 @@ export default function Categories() {
     const [page, setPage] = useState(1);
     const debouncedSearch = useDebounce(search);
     const queryClient = useQueryClient();
+    const { showToast } = useToast();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -35,6 +37,7 @@ export default function Categories() {
             queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
             queryClient.invalidateQueries({ queryKey: ['admin-categories-list'] });
             setDeleteTarget(null);
+            showToast('Category deleted successfully.', 'success');
         }
     });
 
@@ -136,6 +139,7 @@ export default function Categories() {
 
 function CategoryModal({ category, onClose }: { category: Category | null, onClose: () => void }) {
     const queryClient = useQueryClient();
+    const { showToast } = useToast();
     const [formData, setFormData] = useState({
         name: category?.name || '',
         slug: category?.slug || '',
@@ -147,6 +151,7 @@ function CategoryModal({ category, onClose }: { category: Category | null, onClo
             queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
             queryClient.invalidateQueries({ queryKey: ['admin-categories-list'] });
             onClose();
+            showToast(category ? 'Category updated successfully.' : 'Category created successfully.', 'success');
         }
     });
 

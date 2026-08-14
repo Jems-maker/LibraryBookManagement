@@ -53,7 +53,7 @@ class BookApiController extends Controller
             'publisher_id'     => 'nullable|exists:publishers,id',
             'total_copies'     => 'required|integer|min:1',
             'status'           => 'required|in:Available,Unavailable',
-            'cover_image'      => 'nullable|image|max:2048',
+            'cover_image'      => 'nullable|mimes:jpeg,jpg,png|max:2048',
             'year_of_book'     => 'nullable|integer',
         ]);
 
@@ -91,13 +91,38 @@ class BookApiController extends Controller
             'total_copies'     => 'sometimes|integer|min:1',
             'available_copies' => 'sometimes|integer|min:0',
             'status'           => 'sometimes|in:Available,Unavailable',
-            'cover_image'      => 'nullable|image|max:2048',
+            'cover_image'      => 'nullable|mimes:jpeg,jpg,png|max:2048',
             'year_of_book'     => 'nullable|integer',
         ]);
 
         if ($request->hasFile('cover_image')) {
             if ($book->cover_image) Storage::disk('public')->delete($book->cover_image);
             $data['cover_image'] = $request->file('cover_image')->store('book_covers', 'public');
+        }
+
+        // Recalculate available_copies if total_copies changed
+        if (isset($data['total_copies'])) {
+            $diff = $data['total_copies'] - $book->total_copies;
+            $data['available_copies'] = $book->available_copies + $diff;
+        }
+
+        // Ensure available_copies never exceeds total_copies
+        if (isset($data['available_copies']) && isset($data['total_copies'])) {
+            if ($data['available_copies'] > $data['total_copies']) {
+                $data['available_copies'] = $data['total_copies'];
+            }
+        }
+
+        // Ensure status matches available_copies
+        $finalAvailable = $data['available_copies'] ?? $book->available_copies;
+        if (!isset($data['status'])) {
+            $data['status'] = $finalAvailable > 0 ? 'Available' : 'Unavailable';
+        } else {
+            if ($data['status'] === 'Available' && $finalAvailable <= 0) {
+                $data['status'] = 'Unavailable';
+            } elseif ($data['status'] === 'Unavailable' && $finalAvailable > 0) {
+                $data['status'] = 'Available';
+            }
         }
 
         $book->update($data);

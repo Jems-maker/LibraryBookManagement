@@ -89,23 +89,34 @@ class ScannerController extends Controller
 
             $dueDate = Carbon::parse($record->due_date);
             $now     = now();
+            
+            $gracePeriodDays = (int) (\App\Models\Setting::getValue('penalty_grace_period_days') ?? 0);
+            $gracePeriodMins = (int) (\App\Models\Setting::getValue('penalty_grace_period_mins') ?? 5);
+            $totalGracePeriodMins = ($gracePeriodDays * 1440) + $gracePeriodMins;
+
+            $isOverdue = $record->status === 'Overdue' || ($now->greaterThan($dueDate) && $now->diffInMinutes($dueDate) > $totalGracePeriodMins);
             $message = 'Book returned successfully.';
 
             // Penalty only if actually overdue (returned AFTER due date)
-            if ($now->greaterThan($dueDate)) {
-                $daysLate = (int) $now->diffInDays($dueDate);
-                $amount   = $daysLate * 5; // ₱5/day
+            if ($isOverdue) {
+                $penaltyAmount = (float) (\App\Models\Setting::getValue('late_penalty_per_day') ?? 10);
+                $minutesLate = (int) $now->diffInMinutes($dueDate, false);
+                if ($minutesLate <= 0) $minutesLate = 1;
+
+                $daysLate = (int) ceil($minutesLate / 1440);
+                $amount   = $daysLate * $penaltyAmount;
+                $remarks  = "{$daysLate} day(s) late (₱" . number_format($penaltyAmount, 2) . "/day).";
 
                 Penalty::create([
                     'borrow_record_id' => $record->id,
                     'user_id'          => $record->user_id,
                     'amount'           => $amount,
                     'reason'           => 'Overdue Return',
-                    'remarks'          => "{$daysLate} day(s) late.",
+                    'remarks'          => $remarks,
                     'status'           => 'Unpaid',
                 ]);
 
-                $message .= " A penalty of ₱{$amount} has been applied for {$daysLate} day(s) late.";
+                $message .= " A penalty of ₱{$amount} has been applied for overdue return.";
             }
 
             $record->update([
@@ -126,10 +137,18 @@ class ScannerController extends Controller
             // Send return email notification
             $record->refresh()->load(['user', 'book.author', 'book.category', 'penalties']);
 
+            // Get the latest penalty for this record
+            $latestPenalty = $record->penalties()->latest()->first();
+
             if ($record->user?->email) {
                 try {
                     Mail::to($record->user->email)
-                        ->send(new BookReturnNotification($record));
+                        ->send(new BookReturnNotification(
+                            $record,
+                            $isOverdue,
+                            $isOverdue ? ($latestPenalty?->amount ?? null) : null,
+                            $isOverdue ? ($latestPenalty?->remarks ?? null) : null,
+                        ));
                 } catch (\Exception $e) {
                     \Log::warning('Failed to send return notification: ' . $e->getMessage());
                 }

@@ -8,7 +8,6 @@ npm-debug.log
 
 # PHP
 vendor
-composer.lock
 
 # IDE
 .vscode
@@ -20,11 +19,6 @@ composer.lock
 .DS_Store
 Thumbs.db
 
-# Docker
-Dockerfile
-docker-compose.yml
-docker/
-
 # Documentation
 README.md
 CHANGELOG.md
@@ -34,17 +28,18 @@ docs/
 tests/
 phpunit.xml
 
-# Environment
+# Environment (never copy real secrets into the image)
 .env
 .env.local
 .env.production
+.env.*.local
 
-# Build artifacts
+# Build artifacts (rebuilt inside the image)
 /public/build
 /public/hot
 /public/storage
 
-# Storage
+# Storage (runtime data; not part of the image)
 storage/logs/*
 !storage/logs/.gitkeep
 storage/framework/cache/*
@@ -59,3 +54,6 @@ storage/framework/views/*
 *.temp
 *.swp
 *.swo
+
+# Stray artifacts
+output.json

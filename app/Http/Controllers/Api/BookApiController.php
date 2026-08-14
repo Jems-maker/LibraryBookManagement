@@ -29,13 +29,18 @@ class BookApiController extends Controller
             });
         }
 
-        $topBorrowedId = (clone $query)->orderByDesc('total_borrows')->value('id');
+        $topBorrowedId = null;
+        if ($request->filled('category')) {
+            $topBorrowedId = (clone $query)->orderByDesc('total_borrows')->value('id');
+        }
 
         $books = $query->latest()->paginate(12)->withQueryString();
 
-        // Mark recommended
+        // Mark recommended (only when filtered by category)
         $books->getCollection()->transform(function (Book $book) use ($topBorrowedId) {
-            $book->is_recommended = $book->id === $topBorrowedId;
+            if ($topBorrowedId !== null) {
+                $book->is_recommended = $book->id === $topBorrowedId;
+            }
             if ($book->cover_image && !str_starts_with($book->cover_image, 'http')) {
                 $book->cover_image = asset('storage/' . $book->cover_image);
             }

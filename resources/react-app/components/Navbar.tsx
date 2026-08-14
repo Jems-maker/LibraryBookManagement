@@ -25,6 +25,13 @@ const HistoryIcon = () => (
   </svg>
 );
 
+const BorrowedBooksIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+  </svg>
+);
+
 const RequestsIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -36,6 +43,7 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -53,11 +61,20 @@ export default function Navbar() {
     enabled: user?.role === 'student',
   });
 
+  const { data: requests } = useQuery({
+    queryKey: ['my-requests'],
+    queryFn: () => studentApi.requests().then((r) => r.data),
+    enabled: user?.role === 'student',
+  });
+
+  const pendingRequestsCount = requests?.filter((r: any) => r.status === 'Pending').length || 0;
+
   const isActive = (path: string) => location.pathname === path;
 
   const navLinks = [
     { to: '/profile', label: 'Profile', icon: <UserIcon /> },
     { to: '/dashboard', label: 'Browse Books', icon: <BookIcon /> },
+    { to: '/borrowed-books', label: 'Borrowed Books', icon: <BorrowedBooksIcon /> },
     { to: '/requests', label: 'Requests', icon: <RequestsIcon /> },
     { to: '/history', label: 'History', icon: <HistoryIcon /> },
   ];
@@ -89,24 +106,50 @@ export default function Navbar() {
                 {link.to === '/profile' && activeBorrows && activeBorrows.length > 0 && (
                   <span className="ml-1 px-1.5 py-0.5 bg-blue-500 text-white text-[10px] font-bold rounded-full">{activeBorrows.length}</span>
                 )}
+                {link.to === '/requests' && pendingRequestsCount > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-amber-500 text-white text-[10px] font-bold rounded-full">{pendingRequestsCount}</span>
+                )}
               </Link>
             ))}
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-3">
-              <div className="text-right">
-                <p className="text-sm font-semibold text-gray-900 leading-none">{user?.name}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{user?.student_id}</p>
-              </div>
+            <div className="hidden md:flex items-center">
               <div className="relative">
-                <img
-                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name ?? '')}&color=7F9CF5&background=EBF4FF&bold=true&size=80`}
-                  alt={user?.name}
-                  className="w-9 h-9 rounded-full ring-2 ring-blue-100 object-cover"
-                />
+                <button 
+                  onClick={() => setProfileOpen(!profileOpen)}
+                  className="flex items-center gap-3 p-1 rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-gray-900 leading-none">{user?.name}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{user?.student_id}</p>
+                  </div>
+                  <img
+                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name ?? '')}&color=7F9CF5&background=EBF4FF&bold=true&size=80`}
+                    alt={user?.name}
+                    className="w-9 h-9 rounded-full ring-2 ring-blue-100 object-cover"
+                  />
+                  <svg className={`w-4 h-4 text-gray-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {profileOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 p-1.5 z-50" onMouseLeave={() => setProfileOpen(false)}>
+                    <Link to="/profile" className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50 font-medium transition-colors" onClick={() => setProfileOpen(false)}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                      My Profile
+                    </Link>
+                    <button 
+                      onClick={() => { setProfileOpen(false); logout(); }} 
+                      className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 font-semibold transition-colors mt-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                      Sign Out
+                    </button>
+                  </div>
+                )}
               </div>
-              <button onClick={logout} className="text-xs text-gray-500 hover:text-red-500 font-medium transition-colors">Sign out</button>
             </div>
 
             <button onClick={() => setMobileOpen(true)} className="md:hidden p-2 rounded-xl text-gray-600 hover:bg-gray-100 transition-colors">
@@ -152,6 +195,9 @@ export default function Navbar() {
                     {link.label}
                     {link.to === '/profile' && activeBorrows && activeBorrows.length > 0 && (
                       <span className="ml-auto px-2 py-0.5 bg-blue-500 text-white text-[10px] font-bold rounded-full">{activeBorrows.length}</span>
+                    )}
+                    {link.to === '/requests' && pendingRequestsCount > 0 && (
+                      <span className="ml-auto px-2 py-0.5 bg-amber-500 text-white text-[10px] font-bold rounded-full">{pendingRequestsCount}</span>
                     )}
                   </Link>
                 ))}

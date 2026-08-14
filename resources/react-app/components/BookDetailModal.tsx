@@ -424,26 +424,30 @@ export default function BookDetailModal({ book, onClose }: Props) {
           {/* Book Details */}
           <div className="pt-4 border-t border-gray-100">
             <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">Book Details</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500 font-medium">Book ID</span>
-                <span className="text-gray-900 font-semibold">{book.book_id}</span>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-gray-400 font-medium">Book ID</p>
+                <p className="text-sm font-semibold text-gray-900 mt-0.5">{book.book_id}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 font-medium">Author</p>
+                <p className="text-sm font-semibold text-gray-900 mt-0.5">{book.author.name}</p>
               </div>
               {book.publisher && (
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500 font-medium">Publisher</span>
-                  <span className="text-gray-900 font-semibold">{book.publisher.name}</span>
+                <div>
+                  <p className="text-xs text-gray-400 font-medium">Publisher</p>
+                  <p className="text-sm font-semibold text-gray-900 mt-0.5">{book.publisher.name}</p>
                 </div>
               )}
               {book.year_of_book && (
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500 font-medium">Year</span>
-                  <span className="text-gray-900 font-semibold">{book.year_of_book}</span>
+                <div>
+                  <p className="text-xs text-gray-400 font-medium">Year</p>
+                  <p className="text-sm font-semibold text-gray-900 mt-0.5">{book.year_of_book}</p>
                 </div>
               )}
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500 font-medium">Category</span>
-                <span className="text-gray-900 font-semibold">{book.category.name}</span>
+              <div>
+                <p className="text-xs text-gray-400 font-medium">Category</p>
+                <p className="text-sm font-semibold text-gray-900 mt-0.5">{book.category.name}</p>
               </div>
             </div>
           </div>

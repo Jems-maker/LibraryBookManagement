@@ -8,7 +8,7 @@ import { format, parseISO, differenceInDays } from 'date-fns';
 
 function StatusBadge({ status, isOverdue }: { status: string; isOverdue: boolean }) {
   if (isOverdue) return <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded-lg">Overdue</span>;
-  if (status === 'Pending Claim') return <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-lg">Pending</span>;
+  if (status === 'Pending Claim') return <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-lg">Pending Claim</span>;
   return <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-lg">Borrowed</span>;
 }
 
@@ -16,7 +16,8 @@ function BorrowRow({ record }: { record: BorrowRecord }) {
   const dueDate = record.due_date ? parseISO(record.due_date) : null;
   const borrowDate = record.borrow_date ? parseISO(record.borrow_date) : null;
   const now = new Date();
-  const isOverdue = !!dueDate && now > dueDate && record.status !== 'Returned';
+  // 5-minute grace period before showing overdue (matches backend & Dashboard behavior)
+  const isOverdue = !!dueDate && now.getTime() > dueDate.getTime() + 5 * 60 * 1000 && record.status !== 'Returned';
   const daysLeft = dueDate ? differenceInDays(dueDate, now) : null;
   const coverUrl = record.book?.cover_image || null;
 
@@ -49,10 +50,10 @@ function BorrowRow({ record }: { record: BorrowRecord }) {
               <span className="text-[10px] text-gray-300">•</span>
               <span className={`text-[10px] font-semibold ${isOverdue ? 'text-red-500' : 'text-gray-400'}`}>
                 {isOverdue
-                  ? `${Math.abs(daysLeft ?? 0)}d overdue · Due ${format(dueDate, 'MMM d')}`
+                  ? `${Math.abs(daysLeft ?? 0)}d overdue · Due ${format(dueDate, 'MMM d, h:mm a')}`
                   : daysLeft === 0
-                    ? 'Due today'
-                    : `${daysLeft}d left · Due ${format(dueDate, 'MMM d')}`}
+                    ? `Due today at ${format(dueDate, 'h:mm a')}`
+                    : `${daysLeft}d left · Due ${format(dueDate, 'MMM d, h:mm a')}`}
               </span>
             </>
           )}
@@ -110,82 +111,72 @@ export default function Profile() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Profile Card */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-        {/* Header gradient */}
-        <div className="h-24 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600" />
-
-        <div className="px-6 pb-6">
-          {/* Avatar - overlap */}
-          <div className="flex justify-center -mt-12 mb-4">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center ring-4 ring-white shadow-lg">
-              <span className="text-3xl font-bold text-white">{initials}</span>
-            </div>
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 sm:p-8">
+        {/* Header: Avatar + Name */}
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xl font-bold shrink-0">
+            {initials}
           </div>
-
-          {/* Name & Email */}
-          <div className="text-center">
-            <h1 className="text-xl font-bold text-gray-900">{profile?.name}</h1>
-            <p className="text-gray-400 text-sm mt-0.5">{profile?.email}</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-bold text-gray-900 truncate">{profile?.name}</h1>
+            <p className="text-gray-400 text-sm">{profile?.email}</p>
           </div>
-
-          {/* Points */}
           {totalPoints > 0 && (
-            <div className="flex justify-center mt-3">
-              <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-amber-50 border border-amber-200 rounded-full">
-                <svg className="w-4 h-4 text-amber-500 fill-amber-500" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-                <span className="text-sm font-bold text-amber-700">{totalPoints} Points</span>
-              </div>
+            <div className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-50 rounded-xl shrink-0">
+              <svg className="w-4 h-4 text-amber-500 fill-amber-500" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <span className="text-xs font-bold text-amber-700">{totalPoints} pts</span>
             </div>
           )}
-
-          {/* Stats — minimal inline */}
-          <div className="flex justify-center gap-6 mt-5 text-center">
-            <div>
-              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Student ID</p>
-              <p className="text-sm font-bold text-gray-900 mt-1">{profile?.student_id ?? '—'}</p>
-            </div>
-            <div className="w-px bg-gray-200 self-stretch" />
-            <div>
-              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Course</p>
-              <p className="text-sm font-bold text-gray-900 mt-1 break-words max-w-[120px]">{profile?.profile?.course || '—'}</p>
-            </div>
-            <div className="w-px bg-gray-200 self-stretch" />
-            <div>
-              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Gender</p>
-              <p className="text-sm font-bold text-gray-900 mt-1">{existingGender || '—'}</p>
-            </div>
-          </div>
-
-          {/* Gender Selector — only show if not set yet */}
-          {genderEditable && (
-            <div className="mt-5 p-4 bg-blue-50 rounded-2xl border border-blue-100">
-              <p className="text-xs font-semibold text-blue-700 mb-2">Set your gender (one-time only)</p>
-              <div className="flex items-center gap-2">
-                <select
-                  value={gender}
-                  onChange={(e) => { setGender(e.target.value); setGenderError(''); }}
-                  className="flex-1 text-sm rounded-xl border-gray-200 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                </select>
-                <button
-                  onClick={() => gender && updateGender(gender)}
-                  disabled={!gender || isPending}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl disabled:opacity-40 transition-colors shrink-0"
-                >
-                  {isPending ? '...' : 'Save'}
-                </button>
-              </div>
-              {genderSuccess && <p className="text-xs text-green-600 font-medium mt-2">✓ Gender saved</p>}
-              {genderError && <p className="text-xs text-red-600 font-medium mt-2">{genderError}</p>}
-            </div>
-          )}
-
         </div>
+
+        {/* Student Details */}
+        <div className="mt-6 space-y-4">
+          <div>
+            <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Student ID</p>
+            <p className="text-sm font-semibold text-gray-900 mt-1">{profile?.student_id ?? '—'}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Course</p>
+            <p className="text-sm font-semibold text-gray-900 mt-1">{profile?.profile?.course_description || profile?.profile?.course || '—'}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Year Level</p>
+            <p className="text-sm font-semibold text-gray-900 mt-1">{profile?.profile?.year_level || '—'}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Gender</p>
+            <p className="text-sm font-semibold text-gray-900 mt-1">{existingGender || '—'}</p>
+          </div>
+        </div>
+
+        {/* Gender Selector — only show if not set yet */}
+        {genderEditable && (
+          <div className="mt-5 p-4 bg-blue-50 rounded-2xl border border-blue-100">
+            <p className="text-xs font-semibold text-blue-700 mb-2">Set your gender (one-time only)</p>
+            <div className="flex items-center gap-2">
+              <select
+                value={gender}
+                onChange={(e) => { setGender(e.target.value); setGenderError(''); }}
+                className="flex-1 text-sm rounded-xl border border-gray-200 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+              <button
+                onClick={() => gender && updateGender(gender)}
+                disabled={!gender || isPending}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl disabled:opacity-40 transition-colors shrink-0"
+              >
+                {isPending ? '...' : 'Save'}
+              </button>
+            </div>
+            {genderSuccess && <p className="text-xs text-green-600 font-medium mt-2">Gender saved</p>}
+            {genderError && <p className="text-xs text-red-600 font-medium mt-2">{genderError}</p>}
+          </div>
+        )}
       </div>
 
       {/* Active Borrows */}
